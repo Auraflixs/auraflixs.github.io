@@ -5,7 +5,7 @@ window.moviesList.push({
     title: "Jurassic World: El renacer",
     tags: ["Jurassic World: Rebirth", "Jurassic World: Renace"],
     image: "https://raw.githubusercontent.com/yoldkwlws/Stranger-things/refs/heads/main/JURASSIC%20WORLD.jpg",
-    trailer: "https://www.youtube.com/embed/NaQas1P5ZV0",
+    trailer: "https://www.youtube.com/embed/UrxaR2ez5Q4?start=8",
     video: "https://vimeos.net/embed-r5xuubxljw1k.html",
     year: 2025,
     genres: ["Ciencia ficción", "Aventura", "Acción"],
