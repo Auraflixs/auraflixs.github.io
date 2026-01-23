@@ -1,4 +1,4 @@
-peli26 archivosSoportados = [
+const archivosSoportados = [
     "bqdp.js",
     "perfil.js",
     "p/peli3.js",
