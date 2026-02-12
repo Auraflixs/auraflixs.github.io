@@ -1,15 +1,15 @@
 window.HERO_IDS = [
    {
-   id:"",
-    img:"",
+   id:"p69",
+    img:"https://raw.githubusercontent.com/yoldkwlws/Dr-cula/refs/heads/main/TERROR%20EN%20SILENT%20HILL%20REGRESO%20AL%20INFIERNO.jpg",
    },
    {
-   id:"",
-   img:"",
+   id:"p68",
+   img:"https://raw.githubusercontent.com/yoldkwlws/Dr-cula/refs/heads/main/ayuda.jpg",
    },
    {
-    id:"",
-    img:"",
+    id:"p70",
+    img:"https://raw.githubusercontent.com/yoldkwlws/Dr-cula/refs/heads/main/primate.jpg",
    },
    {
     id:"p12",
