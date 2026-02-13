@@ -19,7 +19,7 @@ window.seriesList.push({
                 { episode: 3, video: "https://vimeos.net/embed-0apzfxed5mm9.html" },
                 { episode: 4, video: "https://vimeos.net/embed-93n8o5il78hz.html" },
                 { episode: 5, video: "https://vimeos.net/embed-txnmv02c5sow.html" },
-                // { episode: 6, video: "x" },
+                { episode: 6, video: "https://vimeos.net/embed-vjnwslu82pfz.html" },
                 // { episode: 7, video: "x" },
                 // { episode: 8, video: "x" },
                 // { episode: 9, video: "x" },
