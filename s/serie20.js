@@ -15,7 +15,7 @@ window.seriesList.push({
             episodes: [
                 { episode: 1, video: "https://vimeos.net/embed-u36ubokvgjri.html" }, { episode: 2, video: "https://vimeos.net/embed-9myc82m0rk5d.html" }, { episode: 3, video: "https://vimeos.net/embed-wg7ny092vfeh.html" }, 
                 { episode: 4, video: "https://vimeos.net/embed-7k9avgfuyljv.html" }, { episode: 5, video: "https://vimeos.net/embed-5k11bpdfu1vn.html" }, { episode: 6, video: "https://vimeos.net/embed-smh7pyhuxe0f.html" },
-                { episode: 7, video: "https://vimeos.net/embed-5ipk7bz0t91u.html" }, { episode: 8, video: "https://vimeos.net/embed-lfoaggvz5htp.html" }, { episode: 9, video: "https://vimeos.net/embed-0d93syy2odis.html" }, { episode: 10, video: ,"https://vimeos.net/embed-atwqpohpwgfo.html" }
+                { episode: 7, video: "https://vimeos.net/embed-5ipk7bz0t91u.html" }, { episode: 8, video: "https://vimeos.net/embed-lfoaggvz5htp.html" }, { episode: 9, video: "https://vimeos.net/embed-0d93syy2odis.html" }, { episode: 10, video: "https://vimeos.net/embed-atwqpohpwgfo.html" }
             ]
         },
         {
