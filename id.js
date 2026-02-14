@@ -1,7 +1,7 @@
 window.HERO_IDS = [
    {
-   id:"p69",
-    img:"https://raw.githubusercontent.com/yoldkwlws/Dr-cula/refs/heads/main/TERROR%20EN%20SILENT%20HILL%20REGRESO%20AL%20INFIERNO.jpg",
+   id:"p73",
+    img:"https://raw.githubusercontent.com/Auraflixs/Dr-cula/refs/heads/main/capitulo%203.jpg",
    },
    {
    id:"p68",
@@ -22,13 +22,13 @@ window.HERO_IDS = [
 ];
 
 window.LATELY_IDS = [
-    "s12",
+    "12",
     "s11",
     "s19",
     "p22",
     "p38",
     "p44",
-    "p1",
+    "p69",
     "p15",
     "p14"
 ];
