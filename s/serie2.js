@@ -8,7 +8,7 @@ window.seriesList.push({
     trailer: "https://www.youtube.com/embed/UI3AvYrIooQ", 
     year: 2025, 
     genres: ["Drama", "Misterio"],
-    info: 'Siguiendo los acontecimientos de la década de 1960, el período previo a los acontecimientos de la primera película de la serie "It" de Stephen King.', 
+    info: "Siguiendo los acontecimientos de la década de 1960, el período previo a los acontecimientos de la primera película de la serie 'It' de Stephen King.", 
     featured: true, 
     seasons: [
         { 
