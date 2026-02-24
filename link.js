@@ -3,8 +3,7 @@ const AURA_LINKS = {
     telegram: 'https://t.me/Auraflixpeli',
 
     // Enlace para descargar la App (Botón Compartir App y Actualizar)
-    appDownload: 'https://storage.appilix.com/uploads/app-apk-698f6e39b5ce0-1771007545.apk',
-
+    appDownload: 'https://github.com/Auraflixs/c-digo-vip/raw/refs/heads/main/app-apk-699dc989762c8-1771948425.apk'
     // Enlace de la página Web (Botón Compartir Web)
-    webPage: 'https://auraflixs.github.io/movie/'
+    webPage: 'https://auraflixs.github.io'
 };
