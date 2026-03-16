@@ -5,7 +5,7 @@ window.moviesList.push({
     title: "La hermanastra fea", 
     tags: ["The Ugly Stepsister"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/uI8ho9i1Dl6LUyyJ8ZqkE7SxVq4.webp", 
-    trailer: "https://www.youtube.com/embed/eDI-MTUUq-8", 
+    trailer: "https://streamtape.com/e/Bqv9MJ1VLGcmjx", 
     video: "https://streamtape.com/e/Bqv9MJ1VLGcmjx", 
     year: 2025, 
     genres: ["Terror", "Comedia", "Fantasía", "Drama"],
