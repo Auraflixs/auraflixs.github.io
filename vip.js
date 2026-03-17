@@ -2,7 +2,7 @@
 // CONFIGURACIÓN GENERAL DE SISTEMAS VIP
 // ==========================================
 window.VIP_SYSTEM_STATUS = 'on';    
-window.UNLOCK_LINK_STATUS = 'on';   
+window.UNLOCK_LINK_STATUS = 'off';   
 
 // IMPORTANTE: En tu acortador, la URL de destino final debe ser: https://auraflixs.github.io/?vip=active
 const VIP_SHORTENER_LINK = "https://dropload.pro/tu-enlace-vip"; 
