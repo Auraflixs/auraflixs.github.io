@@ -1,5 +1,5 @@
 // --- CONFIGURACIÓN PRINCIPAL ---
-window.VIP_SYSTEM_STATUS = "off";     // "on" = Botón de comprar/activar VIP activado | "off" = Oculto
+window.VIP_SYSTEM_STATUS = "on";     // "on" = Botón de comprar/activar VIP activado | "off" = Oculto
 window.UNLOCK_LINK_STATUS = "on";    // "on" = Botón de acortador (Desbloquear) activado | "off" = Oculto
 
 // NOTA: Si AMBOS están en "off", todo el contenido de la aplicación queda libre (gratis).
