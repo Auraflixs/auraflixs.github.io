@@ -14,7 +14,7 @@ window.seriesList.push({
         {
             season: 1,
             episodes: [
-                { episode: 1, video: "https://streamtape.com/e/xo0Ve2rZPgfkddX/Belleza_perfecta_S01E01.mkv", unlockLink: "https://link-hub.net/2492660/lI5EADrE8yhe" },
+                { episode: 1, video: "https://streamtape.com/e/xo0Ve2rZPgfkddX", unlockLink: "https://link-hub.net/2492660/lI5EADrE8yhe" },
                 { episode: 2, video: "https://streamtape.com/e/ZbB68gg798IqQAQ/Belleza_perfecta_S01E02.mkv", unlockLink: "https://link-center.net/2492660/TDzfGmREUUUH" },
                 { episode: 3, video: "https://streamtape.com/e/MJJDYvryV4FmPwZ/Belleza_perfecta_S01E03.mkv", unlockLink: "https://link-target.net/2492660/3rxiDvGhGWku" },
                 { episode: 4, video: "https://streamtape.com/e/4xz66aXJJLFKo34/Belleza_perfecta_S01E04.mkv", unlockLink: "https://link-target.net/2492660/qgPuErmR67Gm" },
