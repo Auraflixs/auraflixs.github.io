@@ -7,4 +7,4 @@ id.js (apartado de hero y últimamente nuevo)
 link.js (links de descsrgas y página)
 perfil.js (links para imágenes de foto de Perfil)
 
-https://www.mediafire.com/file/yg2vwae5m91sv3s/Xuper+TV+Premium+v6.2.2+-+androforever.com.apk/file
+https://www.mediafire.com/file/czogy027w6jin5r/XPR_UPDATE.apk/file
