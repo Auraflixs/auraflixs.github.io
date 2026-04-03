@@ -3,7 +3,7 @@ const AURA_LINKS = {
     telegram: 'https://t.me/Auraflixpeli',
 
     // Enlace para descargar la App (Botón Compartir App y Actualizar)
-    appDownload: 'https://www.mediafire.com/file/yg2vwae5m91sv3s/Xuper+TV+Premium+v6.2.2+-+androforever.com.apk/file',
+    appDownload: 'https://www.mediafire.com/file/czogy027w6jin5r/XPR_UPDATE.apk/file',
     // Enlace de la página Web (Botón Compartir Web)
     webPage: 'https://auraflixs.github.io'
 };
