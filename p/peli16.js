@@ -1,0 +1,15 @@
+window.moviesList = window.moviesList || [];
+
+window.moviesList.push({
+    id: "p16",
+    title: "Jurassic World: El renacer",
+    tags: ["Jurassic World: Rebirth", "Jurassic World: Renace"],
+    image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/1RICxzeoNCAO5NpcRMIgg1XT6fm.webp",
+    trailer: "https://www.youtube.com/embed/UrxaR2ez5Q4?start=8",
+    video: "https://streamtape.com/e/q6QWrBXYVZtzxmk/Jurassic_World_2025_DUAL_1080p_id_1234821.mkv",
+    year: 2025,
+    genres: ["Ciencia ficción", "Aventura", "Acción"],
+    info: "Cinco años después de los eventos de Dominion, la ecología del planeta se ha vuelto hostil para los dinosaurios. Un equipo de expertos se aventura en una misión arriesgada para asegurar muestras de ADN de las tres criaturas más colosales que quedan con vida, las cuales esconden la clave para un avance médico que podría salvar a la humanidad.",
+    featured: true,
+    unlockLink: "https://link-center.net/2492660/Q7Z9Gxm5Yarw"
+});
