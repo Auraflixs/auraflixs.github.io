@@ -4,7 +4,7 @@ window.moviesList.push({
     id: "p51",
     title: "Los Ilusionistas 3",
     tags: ["The Illusionists 3", "Now You See Me 3", "Ahora me ves 3"],
-    image "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/Aspr0HcItNVbgLC8cV0ZAO0EBcc.webp",
+    image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/Aspr0HcItNVbgLC8cV0ZAO0EBcc.webp",
     trailer: "https://www.youtube.com/embed/-E3lMRx7HRQ",
     video: "https://streamtape.com/e/K7mLzM3Oo4HzaW/Los_ilusionistas_3_Ahora_me_ves%2C_ahora_no_DUAL_1080p_id_425274.mkv.mp4",
     year: 2025,
