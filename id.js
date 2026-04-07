@@ -10,6 +10,10 @@ window.HERO_IDS = [
    {
     id:"s23",
     img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/A0XppRn02zx5obIiLjHZPr8EZgW.jpg",
+   },
+   {
+   id:"p80",
+   img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/uMzy7fmKcVvd6nMwA7NmRXsgA84.webp"
    }
 ];
 
