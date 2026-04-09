@@ -4,7 +4,7 @@
 window.VIP_SYSTEM_STATUS = 'on';    
 window.UNLOCK_LINK_STATUS = 'off';   
 
-const VIP_DURATION = 12 * 60 * 60 * 1000; // 12 horas
+const VIP_DURATION = 24 * 60 * 60 * 1000; // 12 horas
 
 window.startVipProcess = function() {
     if (window.VIP_SYSTEM_STATUS !== 'on') {
