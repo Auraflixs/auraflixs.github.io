@@ -7,4 +7,4 @@ id.js (apartado de hero y últimamente nuevo)
 link.js (links de descsrgas y página)
 perfil.js (links para imágenes de foto de Perfil)
 
-https://www.mediafire.com/file/r257ohexla60on4/youcine+(4).apk/file
+auraflixs.github.io
