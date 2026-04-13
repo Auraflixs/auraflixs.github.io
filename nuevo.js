@@ -4,7 +4,7 @@
 // Reemplaza 'X2' con 'season' (para Nueva Temp.) o 'episode' (para Nuevo Cap.).
 
 const NEW_CONTENT_CONFIG = [
-    { id: 'x', type: 'episode' },
+    { id: 's5', type: 'episode' },
     { id: 'x', type: 'episode' },
     { id: 'X1', type: 'X2' },
     { id: 'X1', type: 'X2' },
