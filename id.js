@@ -4,6 +4,10 @@ window.HERO_IDS = [
    img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/IMG-20260412-WA0104.webp",
    },
    {
+   id:"s5_alt", // 👈 duplicado para "últimamente"
+   img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp",
+   },
+   {
    id:"p83",
    img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/dv4z4BNuaZWUfzNxDfLDD542vCi.webp",
    },
@@ -22,7 +26,7 @@ window.HERO_IDS = [
 ];
 
 window.LATELY_IDS = [
-    "s5",
+    "s5_alt", // 👈 aquí usa la imagen nueva 😈
     "p83",
     "p82",
     "p84",
@@ -32,8 +36,3 @@ window.LATELY_IDS = [
     "p92",
     "p85"
 ];
-
-// 👇 override SOLO para "últimamente"
-window.LATELY_IMG_OVERRIDE = {
-   "s5": "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp"
-};
