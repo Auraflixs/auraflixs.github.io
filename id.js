@@ -13,22 +13,25 @@ window.HERO_IDS = [
    },
    {
    id:"p79",
-    img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/ytmQOsyYNypGDJCkTJ2TPP3Jc0u.jpg",
+   img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/ytmQOsyYNypGDJCkTJ2TPP3Jc0u.jpg",
    },
    {
-    id:"s23",
-    img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/A0XppRn02zx5obIiLjHZPr8EZgW.jpg",
+   id:"s23",
+   img:"https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/A0XppRn02zx5obIiLjHZPr8EZgW.jpg",
    }
 ];
 
 window.LATELY_IDS = [
-    "s5",
-    "p83",
-    "p82",
-    "p84",
-    "p77",
-    "p79",
-    "p69",
-    "p92",
-    "p85"
+   {
+      id: "s5",
+      img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp"
+   },
+   { id: "p83" },
+   { id: "p82" },
+   { id: "p84" },
+   { id: "p77" },
+   { id: "p79" },
+   { id: "p69" },
+   { id: "p92" },
+   { id: "p85" }
 ];
