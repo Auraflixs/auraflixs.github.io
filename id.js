@@ -22,16 +22,18 @@ window.HERO_IDS = [
 ];
 
 window.LATELY_IDS = [
-   {
-      id: "s5",
-      img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp"
-   },
-   { id: "p83" },
-   { id: "p82" },
-   { id: "p84" },
-   { id: "p77" },
-   { id: "p79" },
-   { id: "p69" },
-   { id: "p92" },
-   { id: "p85" }
+    "s5",
+    "p83",
+    "p82",
+    "p84",
+    "p77",
+    "p79",
+    "p69",
+    "p92",
+    "p85"
 ];
+
+// 👇 override SOLO para "últimamente"
+window.LATELY_IMG_OVERRIDE = {
+   "s5": "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp"
+};
