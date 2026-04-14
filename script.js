@@ -990,7 +990,7 @@ window.showUnlockWarning = function() {
     const videoContainer = document.getElementById('unlockTutorialContainer');
     const tutUrl = (typeof window.VIP_CONFIG !== 'undefined' && window.VIP_CONFIG.tutorialVideo) 
                    ? window.VIP_CONFIG.tutorialVideo 
-                   : "https://player.vimeo.com/video/1182846882";
+                   : "https://player.vimeo.com/video/1182848699";
     videoContainer.innerHTML = `<iframe src="${tutUrl}" allowfullscreen frameborder="0" style="width:100%; height:100%; position:absolute; top:0; left:0;"></iframe>`;
     document.getElementById('dontShowUnlockWarning').checked = false;
     modal.style.display = 'flex';
