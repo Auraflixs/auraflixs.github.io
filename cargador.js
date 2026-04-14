@@ -4,7 +4,7 @@ const archivosSoportados = [
     "perfil.js",
     "p/peli98.js",
     "p/peli97.js",
-    "p/peli86.js",
+    "p/peli96.js",
     "p/peli95.js",
     "p/peli94.js",
     "p/peli93.js",
