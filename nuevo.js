@@ -1,5 +1,5 @@
 // CONFIGURACIÓN DE NOVEDADES
-// Instrucciones:
+// Instrucciones:, episode, cam, season
 // Reemplaza 'X1' con el ID de la película o serie.
 // Reemplaza 'X2' con 'season' (para Nueva Temp.), 'episode' (para Nuevo Cap.) o 'cam' (para pelis CAM).
 
