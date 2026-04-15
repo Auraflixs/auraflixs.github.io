@@ -1,158 +1,81 @@
-const archivosSoportados = [
+// Reemplaza tu lista manual por esta:
+const FIJOS = [
     "link.js",
     "bqdp.js",
     "perfil.js",
-    "p/peli104.js",
-    "p/peli103.js",
-    "p/peli102.js",
-    "s/serie30.js",
-    "s/serie29.js",
-    "s/serie28.js",
-    "p/peli101.js",
-    "p/peli100.js",
-    "p/peli99.js",
-    "p/peli98.js",
-    "p/peli97.js",
-    "p/peli96.js",
-    "p/peli95.js",
-    "p/peli94.js",
-    "p/peli93.js",
-    "s/serie27.js",
-    "p/peli92.js",
-    "s/serie26.js",
-    "p/peli91.js",
-    "s/serie25.js",
-    "p/peli90.js",
-    "p/peli88.js",
-    "p/peli89.js",
-    "p/peli87.js",
-    "p/peli86.js",
-    "p/peli85.js",
-    "p/peli84.js",
-    "s/serie24.js",
-    "p/peli83.js",
-    "p/peli82.js",
-    "p/peli81.js",
-    "p/peli80.js",
-    "p/peli79.js",
-    "s/serie23.js",
-    "s/serie22.js",
-    "s/serie21.js",
-    "p/peli72.js",
-    "p/peli77.js",
-    "p/peli76.js",
-    "p/peli75.js",
-    "p/peli74.js",
-    "p/peli73.js",
-    "p/peli78.js",
-    "s/serie20.js",
-    "p/peli3.js",
-    "s/serie3.js",
-    "p/peli5.js",
-    "p/peli1.js",
-    "p/peli2.js",
-    "p/peli4.js",
-    "s/serie2.js",
-    "p/peli6.js",
-    "p/peli7.js",
-    "s/serie4.js",
-    "p/peli8.js",
-    "p/peli9.js",
-    "s/serie1.js",
-    "p/peli10.js",
-    "p/peli11.js",
-    "p/peli12.js",
-    "p/peli13.js",
-    "p/peli14.js",
-    "p/peli15.js",
-    "p/peli16.js",
-    "p/peli17.js",
-    "p/peli18.js",
-    "p/peli19.js",
-    "p/peli20.js",
-    "p/peli21.js",
-    "s/serie5.js",
-    "p/peli22.js",
-    "p/peli23.js",
-    "s/serie6.js",
-    "p/peli24.js",
-    "p/peli25.js",
-    "p/peli26.js",
-    "p/peli27.js",
-    "p/peli28.js",
-    "p/peli29.js",
-    "p/peli30.js",
-    "p/peli31.js",
-    "p/peli32.js",
-    "s/serie7.js",
-    "s/serie8.js",
-    "p/peli33.js",
-    "s/serie9.js",
-    "p/peli34.js",
-    "p/peli35.js",
-    "p/peli36.js",
-    "s/serie10.js",
-    "p/peli37.js",
-    "p/peli38.js",
-    "p/peli39.js",
-    "p/peli40.js",
-    "p/peli41.js",
-    "p/peli42.js",
-    "p/peli43.js",
-    "s/serie11.js",
-    "p/peli44.js",
-    "s/serie12.js",
-    "s/serie13.js",
-    "p/peli45.js",
-    "p/peli46.js",
-    "s/serie14.js",
-    "p/peli47.js",
-    "p/peli48.js",
-    "p/peli49.js",
-    "p/peli50.js",
-    "p/peli51.js",
-    "s/serie15.js",
-    "p/peli52.js",
-    "p/peli53.js",
-    "p/peli54.js",
-    "p/peli55.js",
-    "p/peli56.js",
-    "p/peli57.js",
-    "p/peli58.js",
-    "p/peli59.js",
-    "p/peli60.js",
-    "p/peli61.js",
-    "p/peli62.js",
-    "p/peli63.js",
-    "p/peli64.js",
-    "p/peli65.js",
-    "p/peli66.js",
-    "s/serie16.js",
-    "s/serie17.js",
-    "p/peli67.js",
-    "s/serie18.js",
-    "s/serie19.js",
-    "p/peli68.js",
-    "p/peli69.js",
-    "p/peli70.js",
-    "p/peli71.js",
+    // ... cualquier otro archivo que no siga el patrón p/peli#.js o s/serie#.js
     "id.js"
 ];
 
-function cargarScripts() {
-    archivosSoportados.forEach(archivo => {
+// Configuración para descubrimiento automático
+const P_PREFIX = "p/peli";      // plantilla: p/peli{n}.js
+const S_PREFIX = "s/serie";     // plantilla: s/serie{n}.js
+const EXT = ".js";
+
+const MAX_CHECK = 500;                // número máximo a comprobar por seguridad
+const CONSECUTIVE_FAILS_TO_STOP = 10; // se detiene cuando haya 10 fallos seguidos (ajusta si quieres)
+
+function loadScriptTag(src) {
+    return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = archivo;
-        script.async = false;
+        script.src = src;
+        script.async = false; // preservar orden
+        script.onload = () => resolve(src);
+        script.onerror = () => reject(src);
         document.body.appendChild(script);
     });
-
-    const mainScript = document.createElement('script');
-    mainScript.src = "script.js";
-    mainScript.async = false;
-    document.body.appendChild(mainScript);
 }
 
-cargarScripts();
+async function loadSequentialPattern(prefix, start = 1, max = MAX_CHECK, stopAfterConsecutiveFails = CONSECUTIVE_FAILS_TO_STOP) {
+    let consecutiveFails = 0;
+    for (let i = start; i <= max; i++) {
+        const path = `${prefix}${i}${EXT}`;
+        try {
+            // Intentar cargar el archivo
+            await loadScriptTag(path);
+            consecutiveFails = 0; // éxito -> resetear contadores
+            // console.log('Cargado', path);
+        } catch (err) {
+            consecutiveFails++;
+            // console.warn('No existe', path);
+            if (consecutiveFails >= stopAfterConsecutiveFails) {
+                // demasiados fallos consecutivos, asumimos que ya no hay más archivos contiguos
+                // console.log(`Deteniendo búsqueda para ${prefix} luego de ${consecutiveFails} fallos consecutivos.`);
+                break;
+            }
+        }
+    }
+}
 
+// función principal: carga fijos -> p/peli# -> s/serie# -> script.js
+async function cargarScriptsDinamico() {
+    try {
+        // 1) cargar scripts fijos en el mismo orden que listaste (serial)
+        for (const f of FIJOS) {
+            try {
+                await loadScriptTag(f);
+            } catch (e) {
+                console.warn(`No se pudo cargar ${f}`, e);
+                // no romper todo; sigue con los demás
+            }
+        }
 
+        // 2) cargar p/peli1..N (en orden). Ajusta start/max si lo deseas.
+        await loadSequentialPattern(P_PREFIX, 1, MAX_CHECK, CONSECUTIVE_FAILS_TO_STOP);
+
+        // 3) cargar s/serie1..N (en orden).
+        await loadSequentialPattern(S_PREFIX, 1, MAX_CHECK, CONSECUTIVE_FAILS_TO_STOP);
+
+        // 4) finalmente carga tu script principal y cualquier otro que dependa de los anteriores.
+        // Cambia la versión si quieres (v=21)
+        await loadScriptTag("script.js?v=21");
+
+        // opcional: callback o evento
+        // console.log('Todos los scripts cargados (o intentados).');
+    } catch (e) {
+        console.error('Error en carga dinámica', e);
+    }
+}
+
+// Ejecutar la carga
+cargarScriptsDinamico();
