@@ -1,158 +1,54 @@
-const archivosSoportados = [
-    "link.js",
-    "bqdp.js",
-    "perfil.js",
-    "p/peli104.js",
-    "p/peli103.js",
-    "p/peli102.js",
-    "s/serie30.js",
-    "s/serie29.js",
-    "s/serie28.js",
-    "p/peli101.js",
-    "p/peli100.js",
-    "p/peli99.js",
-    "p/peli98.js",
-    "p/peli97.js",
-    "p/peli96.js",
-    "p/peli95.js",
-    "p/peli94.js",
-    "p/peli93.js",
-    "s/serie27.js",
-    "p/peli92.js",
-    "s/serie26.js",
-    "p/peli91.js",
-    "s/serie25.js",
-    "p/peli90.js",
-    "p/peli88.js",
-    "p/peli89.js",
-    "p/peli87.js",
-    "p/peli86.js",
-    "p/peli85.js",
-    "p/peli84.js",
-    "s/serie24.js",
-    "p/peli83.js",
-    "p/peli82.js",
-    "p/peli81.js",
-    "p/peli80.js",
-    "p/peli79.js",
-    "s/serie23.js",
-    "s/serie22.js",
-    "s/serie21.js",
-    "p/peli72.js",
-    "p/peli77.js",
-    "p/peli76.js",
-    "p/peli75.js",
-    "p/peli74.js",
-    "p/peli73.js",
-    "p/peli78.js",
-    "s/serie20.js",
-    "p/peli3.js",
-    "s/serie3.js",
-    "p/peli5.js",
-    "p/peli1.js",
-    "p/peli2.js",
-    "p/peli4.js",
-    "s/serie2.js",
-    "p/peli6.js",
-    "p/peli7.js",
-    "s/serie4.js",
-    "p/peli8.js",
-    "p/peli9.js",
-    "s/serie1.js",
-    "p/peli10.js",
-    "p/peli11.js",
-    "p/peli12.js",
-    "p/peli13.js",
-    "p/peli14.js",
-    "p/peli15.js",
-    "p/peli16.js",
-    "p/peli17.js",
-    "p/peli18.js",
-    "p/peli19.js",
-    "p/peli20.js",
-    "p/peli21.js",
-    "s/serie5.js",
-    "p/peli22.js",
-    "p/peli23.js",
-    "s/serie6.js",
-    "p/peli24.js",
-    "p/peli25.js",
-    "p/peli26.js",
-    "p/peli27.js",
-    "p/peli28.js",
-    "p/peli29.js",
-    "p/peli30.js",
-    "p/peli31.js",
-    "p/peli32.js",
-    "s/serie7.js",
-    "s/serie8.js",
-    "p/peli33.js",
-    "s/serie9.js",
-    "p/peli34.js",
-    "p/peli35.js",
-    "p/peli36.js",
-    "s/serie10.js",
-    "p/peli37.js",
-    "p/peli38.js",
-    "p/peli39.js",
-    "p/peli40.js",
-    "p/peli41.js",
-    "p/peli42.js",
-    "p/peli43.js",
-    "s/serie11.js",
-    "p/peli44.js",
-    "s/serie12.js",
-    "s/serie13.js",
-    "p/peli45.js",
-    "p/peli46.js",
-    "s/serie14.js",
-    "p/peli47.js",
-    "p/peli48.js",
-    "p/peli49.js",
-    "p/peli50.js",
-    "p/peli51.js",
-    "s/serie15.js",
-    "p/peli52.js",
-    "p/peli53.js",
-    "p/peli54.js",
-    "p/peli55.js",
-    "p/peli56.js",
-    "p/peli57.js",
-    "p/peli58.js",
-    "p/peli59.js",
-    "p/peli60.js",
-    "p/peli61.js",
-    "p/peli62.js",
-    "p/peli63.js",
-    "p/peli64.js",
-    "p/peli65.js",
-    "p/peli66.js",
-    "s/serie16.js",
-    "s/serie17.js",
-    "p/peli67.js",
-    "s/serie18.js",
-    "s/serie19.js",
-    "p/peli68.js",
-    "p/peli69.js",
-    "p/peli70.js",
-    "p/peli71.js",
-    "id.js"
-];
+// --- CONFIGURACIÓN DE TU CATÁLOGO ---
+// Actualiza estos números cada vez que agregues un nuevo archivo .js a tus carpetas
+const TOTAL_PELIS = 200;  // Llegará hasta p/peli10.js
+const TOTAL_SERIES = 50;  // Llegará hasta s/serie5.js
 
-function cargarScripts() {
-    archivosSoportados.forEach(archivo => {
+function cargarCatalogos() {
+    const head = document.head;
+    let scriptsCargados = 0;
+    const totalEsperado = TOTAL_PELIS + TOTAL_SERIES;
+
+    // Función que verifica si ya se cargaron todos los archivos
+    const verificarCarga = () => {
+        scriptsCargados++;
+        if (scriptsCargados === totalEsperado) {
+            console.log("🎬 Auraflix+: Todos los catálogos cargados correctamente.");
+            // Como en tu script principal tienes la función checkDataReady() 
+            // iterando hasta que window.moviesList tenga datos, 
+            // la app arrancará sola en cuanto estos scripts terminen.
+        }
+    };
+
+    // 1. Cargar Películas (Carpeta "p")
+    for (let i = 1; i <= TOTAL_PELIS; i++) {
         const script = document.createElement('script');
-        script.src = archivo;
-        script.async = false;
-        document.body.appendChild(script);
-    });
+        script.src = `p/peli${i}.js`;
+        script.async = false; // Falso para asegurar que se ejecuten en orden
+        
+        script.onload = verificarCarga;
+        script.onerror = () => {
+            console.error(`⚠️ No se encontró el archivo: p/peli${i}.js`);
+            verificarCarga(); // Se suma igual para no bloquear el inicio de la app
+        };
+        
+        head.appendChild(script);
+    }
 
-    const mainScript = document.createElement('script');
-    mainScript.src = "script.js";
-    mainScript.async = false;
-    document.body.appendChild(mainScript);
+    // 2. Cargar Series (Carpeta "s")
+    for (let i = 1; i <= TOTAL_SERIES; i++) {
+        const script = document.createElement('script');
+        script.src = `s/serie${i}.js`;
+        script.async = false;
+        
+        script.onload = verificarCarga;
+        script.onerror = () => {
+            console.error(`⚠️ No se encontró el archivo: s/serie${i}.js`);
+            verificarCarga(); // Se suma igual para no bloquear el inicio de la app
+        };
+        
+        head.appendChild(script);
+    }
 }
 
-cargarScripts();
-
-
+// Ejecutar la función apenas se lea este archivo
+cargarCatalogos();
