@@ -10,7 +10,7 @@ window.customCategories = [
 window.movieCategories = [
     {
         title: "Recomendados",
-        ids: ["p8", "p73", "p92", "p72", "p51]
+        ids: ["p8", "p73", "p92", "p72", "p51"]
     }
 ];
 
