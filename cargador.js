@@ -1,191 +1,158 @@
-// cargador.js (versión robusta - reemplaza completamente tu cargador.js)
-(function(){
-    const basePath = window.SCRIPTS_BASE || './';
-    const maxMovies = 200;
-    const maxSeries = 120;
-    const batchSize = 12;
-    const fetchTimeoutMs = 12000;
-    const retryAttempts = 1;
-    const mainScriptToAppend = 'script.js?v=21';
-    const supportedExtraFiles = [];
+const archivosSoportados = [
+    "link.js",
+    "bqdp.js",
+    "perfil.js",
+    "p/peli104.js",
+    "p/peli103.js",
+    "p/peli102.js",
+    "s/serie30.js",
+    "s/serie29.js",
+    "s/serie28.js",
+    "p/peli101.js",
+    "p/peli100.js",
+    "p/peli99.js",
+    "p/peli98.js",
+    "p/peli97.js",
+    "p/peli96.js",
+    "p/peli95.js",
+    "p/peli94.js",
+    "p/peli93.js",
+    "s/serie27.js",
+    "p/peli92.js",
+    "s/serie26.js",
+    "p/peli91.js",
+    "s/serie25.js",
+    "p/peli90.js",
+    "p/peli88.js",
+    "p/peli89.js",
+    "p/peli87.js",
+    "p/peli86.js",
+    "p/peli85.js",
+    "p/peli84.js",
+    "s/serie24.js",
+    "p/peli83.js",
+    "p/peli82.js",
+    "p/peli81.js",
+    "p/peli80.js",
+    "p/peli79.js",
+    "s/serie23.js",
+    "s/serie22.js",
+    "s/serie21.js",
+    "p/peli72.js",
+    "p/peli77.js",
+    "p/peli76.js",
+    "p/peli75.js",
+    "p/peli74.js",
+    "p/peli73.js",
+    "p/peli78.js",
+    "s/serie20.js",
+    "p/peli3.js",
+    "s/serie3.js",
+    "p/peli5.js",
+    "p/peli1.js",
+    "p/peli2.js",
+    "p/peli4.js",
+    "s/serie2.js",
+    "p/peli6.js",
+    "p/peli7.js",
+    "s/serie4.js",
+    "p/peli8.js",
+    "p/peli9.js",
+    "s/serie1.js",
+    "p/peli10.js",
+    "p/peli11.js",
+    "p/peli12.js",
+    "p/peli13.js",
+    "p/peli14.js",
+    "p/peli15.js",
+    "p/peli16.js",
+    "p/peli17.js",
+    "p/peli18.js",
+    "p/peli19.js",
+    "p/peli20.js",
+    "p/peli21.js",
+    "s/serie5.js",
+    "p/peli22.js",
+    "p/peli23.js",
+    "s/serie6.js",
+    "p/peli24.js",
+    "p/peli25.js",
+    "p/peli26.js",
+    "p/peli27.js",
+    "p/peli28.js",
+    "p/peli29.js",
+    "p/peli30.js",
+    "p/peli31.js",
+    "p/peli32.js",
+    "s/serie7.js",
+    "s/serie8.js",
+    "p/peli33.js",
+    "s/serie9.js",
+    "p/peli34.js",
+    "p/peli35.js",
+    "p/peli36.js",
+    "s/serie10.js",
+    "p/peli37.js",
+    "p/peli38.js",
+    "p/peli39.js",
+    "p/peli40.js",
+    "p/peli41.js",
+    "p/peli42.js",
+    "p/peli43.js",
+    "s/serie11.js",
+    "p/peli44.js",
+    "s/serie12.js",
+    "s/serie13.js",
+    "p/peli45.js",
+    "p/peli46.js",
+    "s/serie14.js",
+    "p/peli47.js",
+    "p/peli48.js",
+    "p/peli49.js",
+    "p/peli50.js",
+    "p/peli51.js",
+    "s/serie15.js",
+    "p/peli52.js",
+    "p/peli53.js",
+    "p/peli54.js",
+    "p/peli55.js",
+    "p/peli56.js",
+    "p/peli57.js",
+    "p/peli58.js",
+    "p/peli59.js",
+    "p/peli60.js",
+    "p/peli61.js",
+    "p/peli62.js",
+    "p/peli63.js",
+    "p/peli64.js",
+    "p/peli65.js",
+    "p/peli66.js",
+    "s/serie16.js",
+    "s/serie17.js",
+    "p/peli67.js",
+    "s/serie18.js",
+    "s/serie19.js",
+    "p/peli68.js",
+    "p/peli69.js",
+    "p/peli70.js",
+    "p/peli71.js",
+    "id.js"
+];
 
-    function log(...args){ console.debug('[cargador]', ...args); }
-    function warn(...args){ console.warn('[cargador]', ...args); }
-
-    function timeoutPromise(promise, ms) {
-        return new Promise((resolve, reject) => {
-            const id = setTimeout(() => reject(new Error('timeout')), ms);
-            promise.then(v => { clearTimeout(id); resolve(v); }).catch(err => { clearTimeout(id); reject(err); });
-        });
-    }
-
-    async function fetchTextWithRetry(url, retries = retryAttempts) {
-        let lastErr = null;
-        for (let attempt = 0; attempt <= retries; attempt++) {
-            try {
-                const resp = await timeoutPromise(fetch(url, { cache: 'no-store' }), fetchTimeoutMs);
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                const txt = await resp.text();
-                if (txt.trim().length < 20 && /<html|404|Not Found/i.test(txt)) throw new Error('contenido inválido o 404');
-                return txt;
-            } catch (e) {
-                lastErr = e;
-                await new Promise(r => setTimeout(r, 200 + attempt * 150));
-            }
-        }
-        throw lastErr;
-    }
-
-    function injectScriptText(code, urlHint) {
+function cargarScripts() {
+    archivosSoportados.forEach(archivo => {
         const script = document.createElement('script');
-        script.type = 'text/javascript';
-        if (urlHint) script.setAttribute('data-src-hint', urlHint);
-        try { script.appendChild(document.createTextNode(code)); }
-        catch (err) { script.text = code; }
+        script.src = archivo;
+        script.async = false;
         document.body.appendChild(script);
-    }
+    });
 
-    async function loadUrlsInOrder(urls = [], groupName = 'group') {
-        log(`Cargando ${urls.length} archivos (${groupName}) en batches de ${batchSize}`);
-        const results = new Array(urls.length).fill(null);
+    const mainScript = document.createElement('script');
+    mainScript.src = "script.js";
+    mainScript.async = false;
+    document.body.appendChild(mainScript);
+}
 
-        for (let i = 0; i < urls.length; i += batchSize) {
-            const chunk = urls.slice(i, i + batchSize);
-            const promises = chunk.map((u, idx) => {
-                const globalIdx = i + idx;
-                return fetchTextWithRetry(u).then(txt => ({ ok: true, txt, idx: globalIdx, url: u }))
-                                          .catch(err => ({ ok: false, err, idx: globalIdx, url: u }));
-            });
-            const settled = await Promise.all(promises);
-            settled.forEach(r => { results[r.idx] = r; });
-            for (let j = i; j < i + chunk.length; j++) {
-                const r = results[j];
-                if (!r) continue;
-                if (r.ok && r.txt) {
-                    try { injectScriptText(r.txt, r.url); log(`Inyectado: ${r.url}`); }
-                    catch (e) { warn('Fallo inyectando', r.url, e); }
-                } else {
-                    warn('Omitido (no cargó):', r.url, r.err || '');
-                }
-            }
-            await new Promise(res => setTimeout(res, 60));
-        }
+cargarScripts();
 
-        const succeeded = results.filter(r => r && r.ok).map(r => r.url);
-        const failed = results.filter(r => !r || (r && !r.ok)).map(r => (r && r.url) || 'unknown');
-        log(`${groupName} - cargados: ${succeeded.length}, fallidos: ${failed.length}`);
-        return { succeeded, failed };
-    }
 
-    function buildUrls(prefixFolder, namePrefix, maxCount) {
-        const arr = [];
-        for (let i = 1; i <= maxCount; i++) {
-            const sep = basePath.endsWith('/') ? '' : '/';
-            arr.push(`${basePath}${sep}${prefixFolder}/${namePrefix}${i}.js`);
-        }
-        return arr;
-    }
-
-    async function loadExtraFiles(files = []) {
-        for (const f of files) {
-            try {
-                const url = (basePath.endsWith('/') ? basePath : basePath + '/') + f;
-                const txt = await fetchTextWithRetry(url).catch(()=>null);
-                if (txt) { injectScriptText(txt, url); log(`Extra inyectado: ${url}`); }
-                else log(`Extra no encontrado (omitido): ${f}`);
-            } catch (e) { warn('Extra omitido', f, e); }
-        }
-    }
-
-    // Intenta inyectar main script por fetch con múltiples candidatos, si no, usa tag src fallback
-    async function injectMainScriptWithFallback() {
-        const candidates = [];
-        // candidatos directos
-        candidates.push(mainScriptToAppend);
-        // con basePath
-        const bp = basePath.endsWith('/') ? basePath : basePath + '/';
-        candidates.push(bp + mainScriptToAppend);
-        // sin query
-        const withoutQuery = mainScriptToAppend.split('?')[0];
-        candidates.push(bp + withoutQuery);
-        candidates.push(withoutQuery);
-        candidates.push('/' + withoutQuery.replace(/^\//,'')); // /script.js
-        // ruta absoluta tentativa
-        try {
-            const abs = window.location.origin + window.location.pathname;
-            candidates.push(abs + withoutQuery);
-        } catch(e){}
-
-        for (const c of candidates) {
-            try {
-                log('Intentando fetch main:', c);
-                const txt = await fetchTextWithRetry(c).catch(()=>null);
-                if (txt) {
-                    injectScriptText(txt, c);
-                    log('Main script inyectado desde', c);
-                    return true;
-                }
-            } catch (e) {
-                warn('Intento main falló:', c, e && e.message ? e.message : e);
-            }
-        }
-
-        // fallback: agregar tag <script src="..."> con candidate principal (dejar que navegador intente)
-        try {
-            const s = document.createElement('script');
-            s.src = mainScriptToAppend;
-            s.async = false;
-            document.body.appendChild(s);
-            log('Main script añadido mediante tag src (fallback):', mainScriptToAppend);
-            return true;
-        } catch (e) {
-            warn('No se pudo añadir main script con tag src', e);
-            return false;
-        }
-    }
-
-    async function runLoader() {
-        try {
-            const movieUrls = buildUrls('p', 'peli', maxMovies);
-            const seriesUrls = buildUrls('s', 'serie', maxSeries);
-
-            const [moviesRes, seriesRes] = await Promise.all([
-                loadUrlsInOrder(movieUrls, 'peliculas'),
-                loadUrlsInOrder(seriesUrls, 'series')
-            ]);
-
-            if (supportedExtraFiles.length > 0) await loadExtraFiles(supportedExtraFiles);
-
-            const mainInjected = await injectMainScriptWithFallback();
-
-            window.dispatchEvent(new CustomEvent('auraflix-scripts-loaded', {
-                detail: {
-                    moviesLoaded: moviesRes.succeeded.length,
-                    moviesFailed: moviesRes.failed.length,
-                    seriesLoaded: seriesRes.succeeded.length,
-                    seriesFailed: seriesRes.failed.length,
-                    mainInjected
-                }
-            }));
-
-            log('Carga completa ✅');
-        } catch (err) {
-            console.error('Error en cargador principal', err);
-            try {
-                const s = document.createElement('script');
-                s.src = mainScriptToAppend;
-                s.async = false;
-                document.body.appendChild(s);
-            } catch(e){ console.error('Fallback main script también falló', e); }
-            if (typeof showToast === 'function') showToast('Error cargando recursos. Revisa la consola.');
-        }
-    }
-
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', runLoader);
-    else setTimeout(runLoader, 10);
-
-    window.__auraflix_loader = {
-        config: { basePath, maxMovies, maxSeries, batchSize, fetchTimeoutMs, retryAttempts, mainScriptToAppend },
-        run: runLoader
-    };
-})();
