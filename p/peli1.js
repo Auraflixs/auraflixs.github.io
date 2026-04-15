@@ -2,6 +2,7 @@ window.moviesList = window.moviesList || [];
 
 window.moviesList.push({
     id: "p1",
+    globalid: "1",
     title: "Frankenstein",
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/rJjNMlxbjO34myMlzZJAOORBg2O.webp",
     trailer: "https://www.youtube.com/embed/11j2wQFm-tc?start=28",
