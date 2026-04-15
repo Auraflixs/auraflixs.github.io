@@ -9,15 +9,15 @@ window.customCategories = [
 // Categorías que aparecerán SOLO en la pestaña Películas
 window.movieCategories = [
     {
-        title: "Sagas Épicas",
-        ids: ["p10", "p11", "p12"]
+        title: "Recomendados",
+        ids: ["p8", "p73", "p92", "p72", "p51]
     }
 ];
 
 // Categorías que aparecerán SOLO en la pestaña Series
 window.seriesCategories = [
     {
-        title: "Series de Ciencia Ficción",
-        ids: ["s1", "s2", "s3"]
+        title: "Recomendados",
+        ids: ["s2", "s5", "s12", "s27", "s3"]
     }
 ];
