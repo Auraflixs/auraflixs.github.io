@@ -1,72 +1,206 @@
-// cargador.js
+// cargador.js (versión mejorada) - copia/pega este archivo como cargador.js
 (function(){
-    const owner = 'Auraflixs';
-    const repo = 'auraflixs.github.io';
-    // opcional: fija commit/branch; si quieres usar rama por defecto deja ''.
-    const commitRef = '5944f2f1c4f0e8724c3588b82b538a6c342d5e29'; // o '' para default branch
+    // ====== CONFIG ======
+    const basePath = window.SCRIPTS_BASE || './'; // deja './' si tus carpetas p/ y s/ son relativas a la web
+    const maxMovies = 200;   // cambiar si quieres más
+    const maxSeries = 120;   // cambiar si quieres más
+    const batchSize = 12;    // cuántos archivos intentar descargar en paralelo por batch (ajusta si quieres más/menos)
+    const fetchTimeoutMs = 12_000; // timeout por fetch
+    const retryAttempts = 1; // reintentos extra por archivo
+    const mainScriptToAppend = 'script.js?v=21'; // el script principal que debe ejecutarse *después* de cargar los archivos p/ y s/
+    const supportedExtraFiles = []; // si quieres agregar paths adicionales para cargar antes de mainScript (p ej: 'id.js'), agrégalos aquí.
 
-    const apiBase = `https://api.github.com/repos/${owner}/${repo}/contents/`;
-    const pageBase = `https://${owner}.github.io/`;
+    // ====== helpers ======
+    function log(...args){ console.debug('[cargador]', ...args); }
 
-    async function listDir(path){
-        const refQuery = commitRef ? `?ref=${commitRef}` : '';
-        const url = `${apiBase}${path}${refQuery}`;
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('GitHub API error: ' + res.status);
-        const json = await res.json();
-        return json
-            .filter(f => f.type === 'file' && f.name.endsWith('.js'))
-            .map(f => path + '/' + f.name);
-    }
-
-    function injectScript(src){
-        return new Promise(resolve => {
-            const s = document.createElement('script');
-            s.src = src;
-            s.async = false; // preserva orden
-            s.onload = () => { resolve(true); };
-            s.onerror = () => { console.warn('No se cargó:', src); resolve(false); };
-            document.body.appendChild(s);
+    function timeoutPromise(promise, ms) {
+        return new Promise((resolve, reject) => {
+            const id = setTimeout(() => reject(new Error('timeout')), ms);
+            promise.then(v => { clearTimeout(id); resolve(v); }).catch(err => { clearTimeout(id); reject(err); });
         });
     }
 
-    async function fallbackAttemptRange(prefix, pattern, max){
-        for(let i=1;i<=max;i++){
-            const path = `${prefix}${pattern.replace('{n}', i)}`;
+    async function fetchTextWithRetry(url, retries = retryAttempts) {
+        let lastErr = null;
+        for (let attempt = 0; attempt <= retries; attempt++) {
             try {
-                await injectScript(path);
-            } catch(e){ /* ignore */ }
+                const resp = await timeoutPromise(fetch(url, { cache: 'no-store' }), fetchTimeoutMs);
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const txt = await resp.text();
+                // Quick heuristic: if file is very short and contains "404" or typical github html, skip
+                if (txt.trim().length < 20 && /<html|404|Not Found/i.test(txt)) {
+                    throw new Error('contenido inválido o 404');
+                }
+                return txt;
+            } catch (e) {
+                lastErr = e;
+                // si queda reintentos, esperamos un poco
+                await new Promise(r => setTimeout(r, 250 + attempt * 150));
+            }
+        }
+        throw lastErr;
+    }
+
+    // crea y inyecta un script con código (preserva orden si llamas secuencialmente)
+    function injectScriptText(code, urlHint) {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        // poner un data-attr para debugging
+        if (urlHint) script.setAttribute('data-src-hint', urlHint);
+        try {
+            script.appendChild(document.createTextNode(code));
+        } catch (err) {
+            // fallback para entornos antiguos
+            script.text = code;
+        }
+        document.body.appendChild(script);
+    }
+
+    // carga un array de URLs por batches, y los inyecta manteniendo orden
+    async function loadUrlsInOrder(urls = [], groupName = 'group') {
+        log(`Cargando ${urls.length} archivos (${groupName}) en batches de ${batchSize}`);
+        const results = new Array(urls.length).fill(null);
+
+        for (let i = 0; i < urls.length; i += batchSize) {
+            const chunk = urls.slice(i, i + batchSize);
+            const promises = chunk.map((u, idx) => {
+                const globalIdx = i + idx;
+                return fetchTextWithRetry(u).then(txt => ({ ok: true, txt, idx: globalIdx, url: u }))
+                                          .catch(err => ({ ok: false, err, idx: globalIdx, url: u }));
+            });
+            const settled = await Promise.all(promises);
+            // almacenar resultados
+            settled.forEach(r => {
+                results[r.idx] = r;
+            });
+            // inyectar los scripts del chunk **en orden de índice**
+            for (let j = i; j < i + chunk.length; j++) {
+                const r = results[j];
+                if (!r) continue;
+                if (r.ok && r.txt) {
+                    try {
+                        injectScriptText(r.txt, r.url);
+                        log(`Inyectado: ${r.url}`);
+                    } catch (e) {
+                        console.warn('Fallo inyectando', r.url, e);
+                    }
+                } else {
+                    console.warn('Omitido (no cargó):', r.url, r.err || '');
+                }
+            }
+            // pequeña pausa para evitar saturar el navegador si hay muchos archivos
+            await new Promise(res => setTimeout(res, 80));
+        }
+
+        // devolver un resumen
+        const succeeded = results.filter(r => r && r.ok).map(r => r.url);
+        const failed = results.filter(r => !r || (r && !r.ok)).map(r => (r && r.url) || 'unknown');
+        log(`${groupName} - cargados: ${succeeded.length}, fallidos: ${failed.length}`);
+        return { succeeded, failed };
+    }
+
+    // construye lista de URLs relativas para p/peli#.js y s/serie#.js
+    function buildUrls(prefixFolder, namePrefix, maxCount) {
+        const arr = [];
+        for (let i = 1; i <= maxCount; i++) {
+            // ej: './p/peli1.js' (basePath puede terminar en / o no)
+            const sep = basePath.endsWith('/') ? '' : '/';
+            arr.push(`${basePath}${sep}${prefixFolder}/${namePrefix}${i}.js`);
+        }
+        return arr;
+    }
+
+    // Intenta cargar un archivo adicional si existe (por ejemplo archivos sueltos en raiz o id.js)
+    async function loadExtraFiles(files = []) {
+        for (const f of files) {
+            try {
+                const url = (basePath.endsWith('/') ? basePath : basePath + '/') + f;
+                const txt = await fetchTextWithRetry(url).catch(()=>null);
+                if (txt) {
+                    injectScriptText(txt, url);
+                    log(`Extra inyectado: ${url}`);
+                } else {
+                    log(`Extra no encontrado (omitido): ${f}`);
+                }
+            } catch (e) {
+                console.warn('Extra omitido', f, e);
+            }
         }
     }
 
-    (async function main(){
+    // ====== main runner ======
+    async function runLoader() {
         try {
-            // 1) intenta listar p/ y s/ usando la API
-            const pFiles = await listDir('p');
-            const sFiles = await listDir('s');
+            const movieUrls = buildUrls('p', 'peli', maxMovies);
+            const seriesUrls = buildUrls('s', 'serie', maxSeries);
 
-            // carga p primero luego s (si quieres otro orden cámbialo)
-            const files = [...pFiles.sort(), ...sFiles.sort()];
+            // Primero intentamos cargar peliculas y series (ambos grupos en paralelo, cada uno con su orden interno)
+            const [moviesRes, seriesRes] = await Promise.all([
+                loadUrlsInOrder(movieUrls, 'peliculas'),
+                loadUrlsInOrder(seriesUrls, 'series')
+            ]);
 
-            for(const f of files){
-                // preferimos cargar desde GitHub Pages (dominio del site),
-                // así las rutas relativas y assets funcionan correctamente.
-                const url = pageBase + f;
-                await injectScript(url);
+            // luego archivos extras si los definiste
+            if (supportedExtraFiles.length > 0) {
+                await loadExtraFiles(supportedExtraFiles);
             }
+
+            // FIN: inyectamos el script principal (script.js) para que inicie la app con datos ya cargados.
+            const mainScriptUrl = (basePath.endsWith('/') ? basePath : basePath + '/') + mainScriptToAppend;
+            try {
+                const mainTxt = await fetchTextWithRetry(mainScriptUrl).catch(()=>null);
+                if (mainTxt) {
+                    injectScriptText(mainTxt, mainScriptUrl);
+                    log('Main script inyectado desde', mainScriptUrl);
+                } else {
+                    // fallback: inyectar tag <script src="..."> si fetch falla (aun así se cargará por navegador)
+                    const s = document.createElement('script');
+                    s.src = mainScriptToAppend;
+                    s.async = false;
+                    document.body.appendChild(s);
+                    log('Main script añadido mediante tag src (fallback):', mainScriptToAppend);
+                }
+            } catch (e) {
+                console.warn('No se pudo inyectar main script por fetch, se agrega tag src', e);
+                const s = document.createElement('script');
+                s.src = mainScriptToAppend;
+                s.async = false;
+                document.body.appendChild(s);
+            }
+
+            // evento público para saber que terminó
+            try {
+                window.dispatchEvent(new CustomEvent('auraflix-scripts-loaded', {
+                    detail: {
+                        moviesLoaded: moviesRes.succeeded.length,
+                        moviesFailed: moviesRes.failed.length,
+                        seriesLoaded: seriesRes.succeeded.length,
+                        seriesFailed: seriesRes.failed.length
+                    }
+                }));
+            } catch(e){}
+
+            log('Carga completa ✅');
         } catch (err) {
-            console.warn('No se pudo listar desde GitHub API, intentando fallback por patrón.', err);
-            // fallback: intentar nombres comunes (no ideal, pero útil si no hay API)
-            // intenta p/peli1..peli200 y s/serie1..serie120
-            await fallbackAttemptRange('p/', 'peli{n}.js', 200);
-            await fallbackAttemptRange('s/', 'serie{n}.js', 120);
-        } finally {
-            // asegúrate de que script.js se cargue (si no lo cargaste manual antes)
-            if(!document.querySelector('script[src*="script.js"]')) {
-                await injectScript('script.js?v=21');
-            }
-            // opcional: disparar un evento para indicar que cargado todo
-            window.dispatchEvent(new Event('auraflix-scripts-loaded'));
+            console.error('Error en cargador principal', err);
+            // aún así insertamos mainScript para no dejar la app muerta
+            const s = document.createElement('script');
+            s.src = mainScriptToAppend;
+            s.async = false;
+            document.body.appendChild(s);
         }
-    })();
+    }
+
+    // si el DOM ya está listo arrancamos, si no esperamos DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runLoader);
+    } else {
+        setTimeout(runLoader, 10);
+    }
+
+    // Exponer configuración para debug desde consola
+    window.__auraflix_loader = {
+        config: { basePath, maxMovies, maxSeries, batchSize, fetchTimeoutMs, retryAttempts, mainScriptToAppend },
+        run: runLoader
+    };
 })();
