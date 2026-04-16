@@ -5,7 +5,7 @@ window.moviesList.push({
     globalid: "2",
     title: "El Exorcismo De Dios",
     year: "2022",
-    genre: "Terror, Drama", "Crimen", "Fantasía",
+    genre: "Terror, Drama, Crimen, Fantasía",
     tags: ["The Exorcism of God"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/aSfvsaIdtF5eXf8IsvIYdzhI3XL%20(1).webp",
     trailer: "https://www.youtube.com/embed/JAMdGGDxkIQ",
