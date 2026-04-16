@@ -2,7 +2,6 @@ window.moviesList = window.moviesList || [];
 
 window.moviesList.push({
     id: "p10",
-    globalid: "3",
     title: "La hora de la desaparición",
     tags: ["Weapons"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/cpf7vsRZ0MYRQcnLWteD5jK9ymT.webp",
