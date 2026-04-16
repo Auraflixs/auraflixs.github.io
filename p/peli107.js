@@ -5,7 +5,7 @@ window.moviesList.push({
     globalid: "3",
     title: "Ruega por nosotros",
     year: "2021",
-    genre: "Terror", "Misterio",
+    genre: "Terror, Misterio",
     tags: ["The Unholy", "La profecía"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/llHklmHQEDwTgbwGrPvQ5ouSy2k.webp",
     trailer: "https://www.youtube.com/embed/NmQiJPLYzPI",
