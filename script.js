@@ -221,7 +221,7 @@ const css = `
 
   /* Fix inyectado para que las categorías soporten grid de 3 o 4 portadas */
   body.grid-small #movieCategoriesContainer .item,
-  body.grid-small #seriesCategoriesContainer .item { width: calc(25% - 8px); margin-bottom: 10px; }
+  body.grid-small #seriesCategoriesContainer .item { width: calc(25% - 8px); margin-bottom: 5px; }
   body.grid-small #movieCategoriesContainer .item-title,
   body.grid-small #seriesCategoriesContainer .item-title { font-size: 0.65rem; }
 
