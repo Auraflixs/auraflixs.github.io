@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Auraflix</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css?v=8">
+    <style>
+        /* --- existing inline styles from your template (kept) --- */
+        .new-content-badge {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            background-color: #8A2BE2;
+            color: #ffffff;
+            font-size: 0.55rem;
+            font-weight: 800;
+            padding: 3px 6px;
+            border-radius: 4px;
+            z-index: 20;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        #toastContainer {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .custom-toast {
+            background-color: rgba(0, 0, 0, 0.75); 
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-align: center;
+            animation: fadeInOut 3s forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+
+        /* --- Animated header logo styles --- */
+        :root {
+          --morado: #8A2BE2;
+        }
+
+        /* Make sure header-left keeps layout but we control the logo internals */
+        header .header-left { position: relative; display: flex; align-items: center; }
+
+        /* Ensure the original .logo container keeps its place and sizing.
+           We replace the inner text with our animated logo but do not change the container position. */
+        header .logo {
+          display: inline-flex;
+          align-items: center;
+          justify-content: flex-start;
+          padding: 0;
+          margin: 0;
+          /* inherit any font sizing from your main stylesheet to keep coordinates consistent */
+          font: inherit;
+          color: inherit;
+          white-space: nowrap;
+        }
+
+        /* Animated logo internals */
+        .animated-logo {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 0;
+          line-height: 1;
+          user-select: none;
+          vertical-align: middle;
+        }
+
+        /* The fixed A */
+        .animated-logo .fixed-a {
+          display: inline-block;
+          color: var(--morado);
+          font-weight: 800;
+          transform-origin: left center;
+          /* Start 100% larger (scale 2) when alone, then scale to 1 while typing.
+             We use transition to smoothly animate size change. */
+          transform: scale(2);
+          transition: transform 0.7s ease;
+          text-shadow:
+            0 0 6px rgba(138,43,226,0.55),
+            0 0 12px rgba(138,43,226,0.35);
+          /* Keep font-size inherited so the left coordinate matches the previous "A" */
+          font: inherit;
+          line-height: inherit;
+        }
+
+        /* When typing, scale A down to normal */
+        .animated-logo.typing .fixed-a {
+          transform: scale(1);
+        }
+
+        /* typing wrap: fixed width so the A doesn't move while typing/erasing */
+        .animated-logo .typing-wrap {
+          display: inline-flex;
+          align-items: baseline;
+          overflow: hidden;
+          /* Reserve width equal to length of "uraflix" (7ch) so layout doesn't shift */
+          width: 7ch;
+          box-sizing: content-box;
+          margin-left: 0;
+        }
+
+        /* The dynamic text */
+        .animated-logo .typing-text {
+          display: inline-block;
+          color: var(--morado);
+          font-weight: 800;
+          font: inherit; /* inherit header font so alignment is identical */
+          line-height: inherit;
+          min-width: 1ch;
+          letter-spacing: 0;
+          text-shadow:
+            0 0 6px rgba(138,43,226,0.55),
+            0 0 12px rgba(138,43,226,0.35);
+        }
+
+        /* Cursor - hidden when only A present */
+        .animated-logo .cursor {
+          display: inline-block;
+          width: 0;
+          height: 1em;
+          margin-left: 0.06em;
+          background: var(--morado);
+          box-shadow:
+            0 0 6px rgba(138,43,226,0.7),
+            0 0 12px rgba(138,43,226,0.35);
+          vertical-align: -0.08em;
+          opacity: 0;
+          transition: width 0.18s ease, opacity 0.18s ease;
+        }
+
+        /* When typing, show cursor and blinking */
+        .animated-logo.typing .cursor {
+          width: 0.12em;
+          opacity: 1;
+          animation: headerBlink 0.8s infinite;
+        }
+
+        @keyframes headerBlink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
+        }
+
+        /* Ensure no extra spacing or font-style difference that could nudge the A */
+        .animated-logo .fixed-a,
+        .animated-logo .typing-text,
+        .animated-logo .cursor {
+          font-family: inherit;
+          font-size: inherit;
+        }
+
+        /* Small safeguard: avoid the header's other CSS from adding padding/margin inside logo */
+        header .logo * { margin: 0; padding: 0; }
+
+        /* Responsive: keep ch measurement meaningful on small screens */
+        @media (max-width: 420px) {
+          .animated-logo .typing-wrap { width: 7ch; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toastContainer"></div>
+
+    <input type="file" id="customAvatarInput" accept="image/*" style="display: none;">
+
+    <!-- ... (all your modals and content left unchanged) ... -->
+
+    <header>
+        <div class="header-left">
+            <!-- Replaced logo text with animated logo. Container '.logo' remains the same element
+                 so its coordinates (left/top) match the previous positioning. -->
+            <div class="logo" id="siteAuraflixLogo" aria-label="Auraflix">
+                <span class="animated-logo" id="animatedHeaderLogo">
+                    <span class="fixed-a">A</span>
+                    <span class="typing-wrap">
+                        <span id="headerTypingText" class="typing-text" aria-hidden="true"></span>
+                        <span class="cursor" aria-hidden="true"></span>
+                    </span>
+                </span>
+            </div>
+        </div>
+        <div class="header-right" id="headerRightIcons">
+            <button id="topSearchBtn" class="header-icon-btn"><i class="fas fa-search"></i></button>
+            <button id="topHistoryBtn" class="header-icon-btn"><i class="fas fa-clock"></i></button>
+        </div>
+    </header>
+
+    <div id="mainContent">
+        <!-- (rest of your page content unchanged) -->
+        <div id="view-home">
+            <section id="hero" class="hero">
+                <div class="carousel-container"></div>
+                <div class="hero-gradient"></div>
+                <div id="heroDots" class="carousel-indicators"></div>
+            </section>
+            <h2 class="section-title">Últimamente nuevo</h2>
+            <div id="latelyNewGrid" class="row grid-layout"></div>
+            <h2 class="section-title">Recién agregadas</h2>
+            <div id="newlyAddedRow" class="row horizontal-scroll"></div>
+            <div id="customCategoriesContainer"></div>
+            <h2 class="section-title">Películas Destacadas</h2>
+            <div id="homeMoviesRow" class="multi-row-container"></div>
+            <h2 class="section-title">Series Destacadas</h2>
+            <div id="homeSeriesRow" class="multi-row-container"></div>
+        </div>
+
+        <!-- (views, modals, etc. unchanged) -->
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-indicator" id="navIndicator"></div>
+        <a href="#" id="nav-home" class="nav-item active"><i class="fas fa-home"></i> Inicio</a>
+        <a href="#" id="nav-movies" class="nav-item"><i class="fas fa-film"></i> Películas</a>
+        <a href="#" id="nav-series" class="nav-item"><i class="fas fa-tv"></i> Series</a>
+        <a href="#" id="nav-profile" class="nav-item">
+            <div class="nav-profile-img-container">
+                <img id="navProfileImg" src="" alt="P">
+            </div>
+            Perfil
+        </a>
+    </nav>
+
+    <script>
+        /* --- Keep your existing global code --- */
+        window.globalContent = [];
+        const createTrackedArray = () => {
+            const arr = [];
+            const originalPush = arr.push;
+            arr.push = function(...items) {
+                items.forEach(item => { window.globalContent.push(item); });
+                return originalPush.apply(this, items);
+            };
+            return arr;
+        };
+        window.moviesList = createTrackedArray();
+        window.seriesList = createTrackedArray();
+    </script>
+
+    <!-- Your external scripts (kept in same order) -->
+    <script src="link.js"></script>
+    <script src="cargador.js"></script>
+    <script src="vip.js"></script>
+    <script src="linkvip.js"></script>
+    <script src="nuevo.js"></script>
+    <script src="cate.js"></script>
+    <script src="bqdp.js"></script>
+    <script src="perfil.js"></script>
+    <script src="id.js"></script>
+    <script src="script.js"></script>
+
+    <!-- --- Header typing animation script (isolated, safe, no global name collisions) --- -->
+    <script>
+      (function() {
+        const logoWrap = document.getElementById('animatedHeaderLogo');
+        const textEl = document.getElementById('headerTypingText');
+        const text = "uraflix";
+        let index = 0;
+        let deleting = false;
+
+        // Speeds tuned for header visibility
+        const typeSpeed = 140;
+        const deleteSpeed = 90;
+        const pauseAfterTyping = 1800; // 50% longer as you requested
+        const pauseAfterDeleting = 5000;
+
+        // Add/remove 'typing' class to control A scaling and cursor visibility
+        function loop() {
+          if (!deleting) {
+            // mark typing state so A scales down and cursor appears
+            logoWrap.classList.add('typing');
+
+            // show next char
+            textEl.textContent = text.slice(0, index + 1);
+            index++;
+
+            if (index === text.length) {
+              // fully written, wait longer before deleting
+              deleting = true;
+              setTimeout(loop, pauseAfterTyping);
+              return;
+            }
+
+            setTimeout(loop, typeSpeed);
+          } else {
+            // deleting state
+            textEl.textContent = text.slice(0, index - 1);
+            index--;
+
+            if (index === 0) {
+              // reached only the fixed 'A' left
+              deleting = false;
+              // remove typing state so A grows back and cursor hides
+              logoWrap.classList.remove('typing');
+              setTimeout(loop, pauseAfterDeleting);
+              return;
+            }
+
+            setTimeout(loop, deleteSpeed);
+          }
+        }
+
+        // Start loop once DOM is ready (this script is at bottom so DOM is ready)
+        loop();
+      })();
+    </script>
+
+</body>
+</html>
