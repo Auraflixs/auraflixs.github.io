@@ -11,7 +11,8 @@ const NEW_CONTENT_CONFIG = [
     // usa tus entradas...
     { id: 'p92', type: 'cam' },
     { id: 'p83', type: 'cam' },
-    { id: 'p84', type: 'cam' }
+    { id: 'p84', type: 'cam' },
+    { id: 'p111', type: 'cam' }
 ];
 
 // Lógica para inyectar las etiquetas
