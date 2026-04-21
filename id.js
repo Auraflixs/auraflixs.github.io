@@ -1,4 +1,4 @@
-window.HERO_IDS = [
+¹window.HERO_IDS = [
    {
       id: "p118",
       img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/43xkFRJjss4EPa8MjjPhrCAUQfl.webp",
