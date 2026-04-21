@@ -6,7 +6,7 @@ window.moviesList.push({
     title: "La posesión de la momia",
     year: "2026",
     genre: "Terror",
-    tags: ["The Mummy"],
+    tags: ["The Mummy", "La momia de Lee Cronin"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/hGgSpTX2f3ShFD41Ul0vcY3DSHb.webp",
     trailer: "https://www.youtube.com/embed/XJ0uv-phsDk",
     video: "https://auraflix.seekplays.com/#codgl",
