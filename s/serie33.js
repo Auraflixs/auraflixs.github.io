@@ -6,7 +6,7 @@ window.seriesList.push({
     title: "Stranger Things: Relatos del 85",
     year: 2026, 
     genres: ["Ciencia ficción", "Acción"],
-    tags: ["Stranger Things: Tales From '85"]
+    tags: ["Stranger Things: Tales From '85"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/AnVaPUXPKDNOnZbUh6b7WZ5IeMW.webp", 
     trailer: "https://www.youtube.com/embed/kajCUhg36R0", 
     info: "Una serie animada que expande el universo de Hawkins. Ambientada en 1985, sigue a Eleven y sus amigos en nuevas aventuras mientras descubren que algo del Mundo del Revés (Upside Down) ha logrado sobrevivir.", 
