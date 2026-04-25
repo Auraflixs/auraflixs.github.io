@@ -1,7 +1,7 @@
 window.seriesList = window.seriesList || [];
 
 window.seriesList.push({ 
-    id: "s34", 
+    id: "s33", 
     globalid: "18",
     title: "Stranger Things: Relatos del 85",
     year: 2026, 
