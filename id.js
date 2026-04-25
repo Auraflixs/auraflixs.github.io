@@ -24,11 +24,11 @@ window.HERO_IDS = [
 window.LATELY_IDS = [
     { id: "s5", img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp" },// override solo para "Últimamente"
     { id: "p118", img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/ncNhHupOwveGaHtFrhEYbJpcZnT(1).webp" },
+    "p120",
     "p119",
     "p83",
     "p82",
     "p84",
     "s33",
-    "p69",
     "p92"
 ];
