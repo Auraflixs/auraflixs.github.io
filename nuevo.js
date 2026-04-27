@@ -15,7 +15,8 @@ const NEW_CONTENT_CONFIG = [
     { id: 'p111', type: 'cam' },
     { id: 'p118', type: 'cam' },
     { id: 'p120', type: 'cam' },
-    { id: 'p121', type: 'cam' }
+    { id: 'p121', type: 'cam' },
+    { id: 'p126', type: 'cam' }
 ];
 
 // Lógica para inyectar las etiquetas
