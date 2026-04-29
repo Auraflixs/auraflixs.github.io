@@ -9,9 +9,9 @@ const NEW_CONTENT_CONFIG = [
     // ejemplo película marcada como CAM:
     { id: 's20', type: 'episode' },
     // usa tus entradas...
-    { id: 'p92', type: 'cam' },
+    { id: 'x', type: 'cam' },
     { id: 'p122', type: 'cam' },
-    { id: 'p84', type: 'cam' },
+    { id: 'x', type: 'cam' },
     { id: 'p111', type: 'cam' },
     { id: 'p118', type: 'cam' },
     { id: 'p120', type: 'cam' },
