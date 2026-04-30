@@ -2,7 +2,7 @@
 // CONFIGURACIÓN GENERAL DE SISTEMAS VIP
 // ==========================================
 window.VIP_SYSTEM_STATUS = 'off';    
-window.UNLOCK_LINK_STATUS = 'on';   
+window.UNLOCK_LINK_STATUS = 'off';   
 
 const VIP_DURATION = 24 * 60 * 60 * 1000; // 12 horas
 
