@@ -1,0 +1,1720 @@
+let continueWatching = JSON.parse(localStorage.getItem('continueWatching')) || [];
+let myFavorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
+let currentUser = JSON.parse(localStorage.getItem('auraflixUser')) || null;
+let savedGridSize = localStorage.getItem('auraflixGridSize') || 'normal';
+let seriesMemory = JSON.parse(localStorage.getItem('auraflixSeriesMemory')) || {};
+let unlockedMemory = JSON.parse(localStorage.getItem('auraflixUnlockedMemory')) || [];
+let moviesListInternal = [];
+let seriesListInternal = [];
+let featuredList = [];
+let currentHeroIndex = 0;
+let autoSlideInterval;
+let currentModalItem = null;
+let currentSeasonIndex = 0;
+let isPlayingTrailer = false;
+let currentView = 'home';
+let selectedAvatarTemp = null;
+let touchStartX = 0;
+let touchEndX = 0;
+let isDiagnosisRunning = false;
+let wasSearchOpen = false;
+let wasHistoryOpen = false;
+let isAdminUnlocked = false;
+
+let currentPlayerIframe = null;
+let currentPlayerOrigin = null;
+let currentPlayerProgressKey = null;
+window.__auraPlayerTimeInterval = null;
+window.__auraPlayerMessageInstalled = false;
+window.__auraHasSeeked = false;
+window.__auraSeekRetryTimer = null;
+window.__auraSeekTarget = null;
+
+function ensurePlayerApi(url) {
+    if (!url) return url;
+    if (url.includes('api=')) return url;
+    if (url.includes('#')) return `${url}&api=all`;
+    return url;
+}
+
+function getStableVideoId(url) {
+    try {
+        const u = new URL(url, window.location.href);
+        if (u.hash && u.hash.length > 1) {
+            return decodeURIComponent(u.hash.replace(/^#/, '').split('&')[0].split('?')[0]);
+        }
+        const filename = u.searchParams.get('filename');
+        if (filename) return decodeURIComponent(filename);
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length > 0) return parts[parts.length - 1];
+        return u.origin + u.pathname;
+    } catch (e) {
+        return String(url);
+    }
+}
+
+function buildPlayerProgressKey(url, overlayText) {
+    const itemId = currentModalItem ? String(currentModalItem.id) : 'unknown';
+    const label = overlayText ? String(overlayText).toLowerCase() : 'main';
+    const stableId = getStableVideoId(url);
+    return 'auraflixPlayerProgress_' + itemId + '_' + label + '_' + stableId;
+}
+
+function clearSeekRetry() {
+    if (window.__auraSeekRetryTimer) {
+        clearTimeout(window.__auraSeekRetryTimer);
+        window.__auraSeekRetryTimer = null;
+    }
+}
+
+function attemptSeekWithRetry(seekTo, attemptsLeft) {
+    if (!currentPlayerIframe || !currentPlayerIframe.contentWindow || attemptsLeft <= 0) {
+        clearSeekRetry();
+        return;
+    }
+    currentPlayerIframe.contentWindow.postMessage({ command: 'seek', value: seekTo }, currentPlayerOrigin || '*');
+    window.__auraSeekTarget = seekTo;
+    window.__auraSeekRetryTimer = setTimeout(function() {
+        if (!currentPlayerIframe || !currentPlayerIframe.contentWindow) return;
+        currentPlayerIframe.contentWindow.postMessage({ command: 'play' }, currentPlayerOrigin || '*');
+        window.__auraSeekRetryTimer = setTimeout(function() {
+            attemptSeekWithRetry(seekTo, attemptsLeft - 1);
+        }, 2000);
+    }, 500);
+}
+
+function installPlayerMessageHandler() {
+    if (window.__auraPlayerMessageInstalled) return;
+    window.__auraPlayerMessageInstalled = true;
+    window.addEventListener('message', function(e) {
+        if (!currentPlayerIframe || !currentPlayerOrigin) return;
+        if (e.origin !== currentPlayerOrigin) return;
+        var data = e.data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch (err) { return; }
+        }
+        if (!data || typeof data !== 'object') return;
+
+        var isReady = (
+            data.playerStatus === 'Ready' ||
+            data.playerStatus === 'Listo' ||
+            data.event === 'ready' ||
+            data.event === 'loaded' ||
+            data.event === 'loadedmetadata' ||
+            data.event === 'canplay' ||
+            data.event === 'canplaythrough'
+        );
+
+        if (isReady && currentPlayerProgressKey && !window.__auraHasSeeked) {
+            var savedTime = localStorage.getItem(currentPlayerProgressKey);
+            if (savedTime && currentPlayerIframe.contentWindow) {
+                window.__auraHasSeeked = true;
+                clearSeekRetry();
+                setTimeout(function() {
+                    attemptSeekWithRetry(parseFloat(savedTime), 4);
+                }, 600);
+            }
+            if (window.__auraPlayerTimeInterval) clearInterval(window.__auraPlayerTimeInterval);
+            window.__auraPlayerTimeInterval = setInterval(function() {
+                if (currentPlayerIframe && currentPlayerIframe.contentWindow && currentPlayerOrigin) {
+                    currentPlayerIframe.contentWindow.postMessage({ command: 'getTime' }, currentPlayerOrigin);
+                }
+            }, 5000);
+        }
+
+        var currentTime = typeof data.currentTime === 'number' ? data.currentTime : (typeof data.time === 'number' ? data.time : undefined);
+        var duration = typeof data.duration === 'number' ? data.duration : undefined;
+
+        if (window.__auraSeekTarget !== null && typeof currentTime === 'number') {
+            var diff = Math.abs(currentTime - window.__auraSeekTarget);
+            if (diff < 3) {
+                window.__auraSeekTarget = null;
+                clearSeekRetry();
+            }
+        }
+
+        if (typeof currentTime === 'number' && currentPlayerProgressKey) {
+            if (typeof duration === 'number') {
+                if ((duration - currentTime) <= 10) {
+                    localStorage.removeItem(currentPlayerProgressKey);
+                } else {
+                    localStorage.setItem(currentPlayerProgressKey, String(currentTime));
+                }
+            } else {
+                localStorage.setItem(currentPlayerProgressKey, String(currentTime));
+            }
+        }
+    });
+}
+
+function checkAdminAccess() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+        isAdminUnlocked = true;
+        sessionStorage.setItem('auraflixAdminUnlocked', '1');
+        var cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({ view: 'home', modal: false, search: false, history: false }, '', cleanUrl);
+        return;
+    }
+    if (sessionStorage.getItem('auraflixAdminUnlocked') === '1') {
+        isAdminUnlocked = true;
+    }
+}
+
+function checkPageParam() {
+    var params = new URLSearchParams(window.location.search);
+    var page = params.get('page');
+    if (page === 'solicitudes') {
+        var cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({ view: 'home', modal: false, search: false, history: false }, '', cleanUrl);
+        setTimeout(function() {
+            window.open('https://auraflixs.github.io/solicitudes', '_blank');
+        }, 500);
+    }
+}
+
+window.deepLinkSeason = null;
+window.deepLinkEpisode = null;
+window.unlockedItemId = null;
+window.unlockedSeason = null;
+window.unlockedEpisode = null;
+window.enteredViaDeepLink = false;
+
+const GALLERY_BTN_ID_LOGIN = "gallery-upload-btn-id-login";
+const GALLERY_BTN_ID_MODAL = "gallery-upload-btn-id-modal";
+
+const ALL_GENRES = [
+    "Acción", "Aventura", "Animación", "Comedia", "Crimen", "Documental",
+    "Drama", "Familia", "Fantasía", "Historia", "Terror", "Música",
+    "Misterio", "Romance", "Ciencia ficción", "Película de TV",
+    "Suspenso", "Bélica", "Western"
+];
+let movieFilters = [];
+let seriesFilters = [];
+let tempFilters = [];
+let currentFilterContext = '';
+
+function setUnlockedForTicket(ticketKey, hours) {
+    hours = hours || 24;
+    const until = Date.now() + hours * 3600000;
+    localStorage.setItem('auraflix_unlocked_until_' + ticketKey, String(until));
+    if (!unlockedMemory.includes(ticketKey)) {
+        unlockedMemory.push(ticketKey);
+        localStorage.setItem('auraflixUnlockedMemory', JSON.stringify(unlockedMemory));
+    }
+}
+
+function isTicketCurrentlyUnlocked(ticketKey) {
+    if (isAdminUnlocked) return true;
+    const raw = localStorage.getItem('auraflix_unlocked_until_' + ticketKey);
+    const until = raw ? parseInt(raw, 10) : 0;
+    if (!until || isNaN(until) || until <= Date.now()) {
+        if (unlockedMemory.includes(ticketKey)) {
+            unlockedMemory = unlockedMemory.filter(k => k !== ticketKey);
+            localStorage.setItem('auraflixUnlockedMemory', JSON.stringify(unlockedMemory));
+        }
+        localStorage.removeItem('auraflix_unlocked_until_' + ticketKey);
+        return false;
+    }
+    return true;
+}
+
+function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'custom-toast';
+    toast.innerText = message;
+    container.appendChild(toast);
+    setTimeout(function() {
+        if (container.contains(toast)) container.removeChild(toast);
+    }, 3000);
+}
+
+window.showCustomConfirm = function(title, message, onAccept, onCancel, acceptText, cancelText) {
+    acceptText = acceptText || "Aceptar";
+    cancelText = cancelText || "Cancelar";
+    const modal = document.getElementById('customConfirmModal');
+    if (!modal) return;
+    document.getElementById('confirmModalTitle').innerText = title;
+    document.getElementById('confirmModalMessage').innerText = message;
+    const btnAccept = document.getElementById('acceptConfirmBtn');
+    const btnCancel = document.getElementById('cancelConfirmBtn');
+    btnAccept.innerText = acceptText;
+    btnCancel.innerText = cancelText;
+    btnAccept.onclick = function() { modal.style.display = 'none'; if (onAccept) onAccept(); };
+    btnCancel.onclick = function() { modal.style.display = 'none'; if (onCancel) onCancel(); };
+    modal.style.display = 'flex';
+};
+
+const normalizeText = function(text) {
+    if (!text) return "";
+    return text.normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[.,:-]/g, "")
+        .replace(/\s+/g, " ")
+        .toLowerCase()
+        .trim();
+};
+
+window.addEventListener('load', function() {
+    setTimeout(iniciarTodo, 10);
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(updateNavIndicator, 50);
+});
+
+function initLogoTyping() {
+    const typingText = document.getElementById('typingText');
+    const logoContainer = document.getElementById('logo');
+    if (!typingText || !logoContainer) return;
+    const textToType = "uraflix's";
+    let isDeleting = false;
+    let charIndex = 0;
+    function type() {
+        if (!typingText || !logoContainer) return;
+        typingText.textContent = textToType.substring(0, charIndex);
+        if (charIndex > 0 || isDeleting) logoContainer.classList.add('typing');
+        else logoContainer.classList.remove('typing');
+        if (!isDeleting && charIndex < textToType.length) { charIndex++; setTimeout(type, 150); }
+        else if (isDeleting && charIndex > 0) { charIndex--; setTimeout(type, 100); }
+        else { isDeleting = !isDeleting; setTimeout(type, isDeleting ? 3000 : 500); }
+    }
+    setTimeout(type, 1000);
+}
+
+function iniciarTodo() {
+    checkAdminAccess();
+    checkPageParam();
+    initLogoTyping();
+    injectImageStyles();
+    optimizeConnections();
+    window.moviesList = window.moviesList || [];
+    window.seriesList = window.seriesList || [];
+    if (savedGridSize === 'small') document.body.classList.add('grid-small');
+    else document.body.classList.remove('grid-small');
+    checkLoginStatus();
+    try { window.history.replaceState({ view: 'home', modal: false, search: false, history: false }, ''); } catch (e) {}
+    const avatarInput = document.getElementById('customAvatarInput');
+    if (avatarInput) avatarInput.addEventListener('change', handleImageUpload);
+    setupEventListeners();
+    setupAutoRotation();
+    setTimeout(updateNavIndicator, 200);
+    window.addEventListener('resize', updateNavIndicator);
+}
+
+function updateNavIndicator() {
+    requestAnimationFrame(function() {
+        const activeItem = document.querySelector('.nav-item.active');
+        const indicator = document.getElementById('navIndicator');
+        if (activeItem && indicator) {
+            const itemWidth = activeItem.offsetWidth;
+            const bubbleWidth = Math.min(itemWidth * 0.75, 65);
+            indicator.style.width = bubbleWidth + 'px';
+            const centerX = activeItem.offsetLeft + (itemWidth / 2);
+            indicator.style.transform = 'translate(' + (centerX - (bubbleWidth / 2)) + 'px, -50%)';
+        }
+    });
+}
+
+function setupAutoRotation() {
+    const handleRotation = async function() {
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        if (isFullscreen) {
+            try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (e) {}
+        } else {
+            try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+        }
+    };
+    document.addEventListener('fullscreenchange', handleRotation);
+    document.addEventListener('webkitfullscreenchange', handleRotation);
+}
+
+function optimizeConnections() {
+    const allItems = [...window.moviesList, ...window.seriesList].slice(0, 20);
+    const domains = new Set();
+    allItems.forEach(function(item) {
+        try { if (item.image) domains.add(new URL(item.image).origin); } catch (e) {}
+    });
+    domains.forEach(function(domain) {
+        const link = document.createElement('link');
+        link.rel = 'preconnect';
+        link.href = domain;
+        link.crossOrigin = 'anonymous';
+        document.head.appendChild(link);
+    });
+}
+
+function injectImageStyles() {
+    const styleId = 'auraflix-smooth-images';
+    if (document.getElementById(styleId)) return;
+    const css = `
+    .smooth-image { opacity: 0; transition: opacity 0.5s ease-out; will-change: opacity; }
+    .smooth-image.loaded { opacity: 1; }
+    .img-loader {
+        background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+        width: 100%;
+        height: 100%;
+    }
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    .avatar-option img { opacity: 0; transition: opacity 0.4s ease-out; }
+    .avatar-option img.loaded { opacity: 1; }
+    #modalContentPlayer { transition: background-image 0.3s ease; background-color: #000; }
+    body.grid-small #movieCategoriesContainer .item,
+    body.grid-small #seriesCategoriesContainer .item { width: calc(25% - 8px); margin-bottom: 5px; }
+    body.grid-small #movieCategoriesContainer .item-title,
+    body.grid-small #seriesCategoriesContainer .item-title { font-size: 0.65rem; }
+    .row.horizontal-scroll.category-horizontal .item {
+        min-width: auto !important;
+        width: calc(33.333% - 7px);
+        flex: 0 0 auto;
+        margin-bottom: 8px;
+    }
+    body.grid-small .row.horizontal-scroll.category-horizontal .item { width: calc(25% - 8px); margin-bottom: 5px; }
+    .row.horizontal-scroll.category-horizontal .item img { width: 100%; aspect-ratio: 2/3; height: auto; object-fit: cover; border-radius: 6px; display: block; }
+    #movieCategoriesContainer .section-title,
+    #seriesCategoriesContainer .section-title,
+    .section-title { margin: 6px 4% 4px; }
+    .row.horizontal-scroll.category-horizontal { padding-top: 0; margin-top: 0; }
+    @media (min-width: 768px) {
+        .row.horizontal-scroll.category-horizontal .item { width: calc(33.333% - 7px); }
+        body.grid-small .row.horizontal-scroll.category-horizontal .item { width: calc(25% - 8px); }
+    }
+    `;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML = css;
+    document.head.appendChild(style);
+}
+
+function checkLoginStatus() {
+    if (!currentUser) {
+        document.getElementById('loginScreen').style.display = 'flex';
+        renderAvatarSelection('avatarGrid', 'login');
+    } else {
+        document.getElementById('loginScreen').style.display = 'none';
+        loadUserDataInUI();
+        checkDataReady();
+    }
+}
+
+function checkDataReady() {
+    if (window.moviesList.length > 0 || window.seriesList.length > 0) {
+        initApp();
+        setTimeout(checkDeepLinks, 300);
+    } else {
+        setTimeout(checkDataReady, 100);
+    }
+}
+
+function initApp() {
+    if (!window.moviesList.originalOrder) window.moviesList.originalOrder = [...window.moviesList];
+    if (!window.seriesList.originalOrder) window.seriesList.originalOrder = [...window.seriesList];
+    shuffleArray(window.moviesList);
+    shuffleArray(window.seriesList);
+    renderHomeView();
+    let newlyAdded = [];
+    if (window.globalContent && window.globalContent.length > 0) {
+        newlyAdded = [...window.globalContent];
+    } else {
+        newlyAdded = [...window.moviesList.originalOrder, ...window.seriesList.originalOrder];
+    }
+    newlyAdded.sort(function(a, b) {
+        return (parseInt(b.globalid) || 0) - (parseInt(a.globalid) || 0);
+    });
+    renderList('newlyAddedRow', newlyAdded.slice(0, 20));
+    renderCustomCategories();
+    setupHero();
+    setupLatelyNew();
+}
+
+function checkDeepLinks() {
+    const url = window.location.href;
+    let queryString = '';
+    if (url.includes('?')) queryString = url.substring(url.indexOf('?'));
+    if (!queryString) return;
+    const urlParams = new URLSearchParams(queryString);
+    if (!urlParams.has('movie') && !urlParams.has('serie')) return;
+
+    window.enteredViaDeepLink = true;
+    const baseUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({ view: 'home', modal: false, search: false, history: false }, '', baseUrl);
+    window.history.pushState({ view: 'home', modal: true, search: false, history: false }, '', url);
+
+    if (urlParams.has('movie')) {
+        const val = urlParams.get('movie');
+        const parts = val.split('-');
+        const id = parts[0];
+        if (parts.includes('vip')) {
+            const ticketTime = localStorage.getItem('auraflix_tkt_' + id);
+            const returnToken = localStorage.getItem('auraflix_return_token');
+            const now = new Date().getTime();
+            const referrer = document.referrer || '';
+            const cameFromOuo = referrer.includes('ouo.io') || referrer.includes('ouo.press');
+            const hasValidSessionToken = (returnToken === String(id));
+            if (ticketTime && (now - parseInt(ticketTime)) < 1800000 && (hasValidSessionToken || cameFromOuo)) {
+                setUnlockedForTicket(String(id), 24);
+                localStorage.removeItem('auraflix_tkt_' + id);
+                localStorage.removeItem('auraflix_return_token');
+                window.unlockedItemId = id;
+            }
+        }
+        openModal(id, 'movies', true);
+
+    } else if (urlParams.has('serie')) {
+        const val = urlParams.get('serie');
+        const parts = val.split('-');
+        const id = parts[0];
+        const seasonStr = parts.find(function(p) { return p.startsWith('t'); });
+        const epStr = parts.find(function(p) { return p.startsWith('e'); });
+        if (seasonStr && epStr) {
+            window.deepLinkSeason = parseInt(seasonStr.replace('t', ''));
+            window.deepLinkEpisode = parseInt(epStr.replace('e', ''));
+        }
+        if (parts.includes('vip')) {
+            const sNum = seasonStr ? seasonStr.replace('t', '') : '';
+            const eNum = epStr ? epStr.replace('e', '') : '';
+            const ticketKey = id + '-t' + sNum + '-e' + eNum;
+            const ticketTime = localStorage.getItem('auraflix_tkt_' + ticketKey);
+            const returnToken = localStorage.getItem('auraflix_return_token');
+            const now = new Date().getTime();
+            const referrer = document.referrer || '';
+            const cameFromOuo = referrer.includes('ouo.io') || referrer.includes('ouo.press');
+            const hasValidSessionToken = (returnToken === ticketKey);
+            if (ticketTime && (now - parseInt(ticketTime)) < 1800000 && (hasValidSessionToken || cameFromOuo)) {
+                setUnlockedForTicket(ticketKey, 24);
+                localStorage.removeItem('auraflix_tkt_' + ticketKey);
+                localStorage.removeItem('auraflix_return_token');
+                window.unlockedItemId = id;
+                window.unlockedSeason = window.deepLinkSeason;
+                window.unlockedEpisode = window.deepLinkEpisode;
+            }
+        }
+        openModal(id, 'series', true);
+    }
+}
+
+function renderAvatarSelection(containerId, context) {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
+    grid.innerHTML = '';
+    if (typeof profileImages !== 'undefined' && Array.isArray(profileImages)) {
+        profileImages.forEach(function(url) {
+            const div = document.createElement('div');
+            div.className = 'avatar-option';
+            div.innerHTML = '<img src="' + url + '" alt="Avatar" class="smooth-image" onload="this.classList.add(\'loaded\')">';
+            div.onclick = function() {
+                grid.querySelectorAll('.avatar-option').forEach(function(el) { el.classList.remove('selected'); });
+                div.classList.add('selected');
+                selectedAvatarTemp = url;
+            };
+            grid.appendChild(div);
+        });
+    }
+    const addBtn = document.createElement('div');
+    addBtn.className = 'avatar-option';
+    addBtn.id = context === 'login' ? GALLERY_BTN_ID_LOGIN : GALLERY_BTN_ID_MODAL;
+    addBtn.innerHTML = '<div class="upload-btn"><i class="fas fa-plus"></i></div>';
+    addBtn.onclick = function() { document.getElementById('customAvatarInput').click(); };
+    grid.appendChild(addBtn);
+}
+
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        selectedAvatarTemp = event.target.result;
+        let activeGridId = null;
+        let activeBtnId = null;
+        if (document.getElementById('loginScreen').style.display === 'flex') {
+            activeGridId = 'avatarGrid';
+            activeBtnId = GALLERY_BTN_ID_LOGIN;
+        } else if (document.getElementById('changeAvatarModal').style.display === 'flex') {
+            activeGridId = 'changeAvatarGrid';
+            activeBtnId = GALLERY_BTN_ID_MODAL;
+        }
+        if (activeGridId && activeBtnId) {
+            const grid = document.getElementById(activeGridId);
+            const btn = document.getElementById(activeBtnId);
+            grid.querySelectorAll('.avatar-option').forEach(function(el) { el.classList.remove('selected'); });
+            if (btn) {
+                btn.innerHTML = '<img src="' + selectedAvatarTemp + '" class="smooth-image" onload="this.classList.add(\'loaded\')" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+                btn.classList.add('selected');
+            }
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateUserProfile(newUrl) {
+    if (currentUser) {
+        currentUser.avatar = newUrl;
+        localStorage.setItem('auraflixUser', JSON.stringify(currentUser));
+        loadUserDataInUI();
+    }
+}
+
+function loadUserDataInUI() {
+    if (!currentUser) return;
+    const navImg = document.getElementById('navProfileImg');
+    if (navImg) navImg.src = currentUser.avatar;
+    const pageImg = document.getElementById('profilePageImg');
+    const pageName = document.getElementById('profilePageName');
+    if (pageImg) pageImg.src = currentUser.avatar;
+    if (pageName) pageName.innerText = currentUser.name;
+    checkAdminPrivileges();
+    if (typeof checkVipTimerUI === 'function') checkVipTimerUI();
+    renderMyList();
+}
+
+function checkAdminPrivileges() {
+    const adminPanel = document.getElementById('adminTools');
+    if (!adminPanel || !currentUser) return;
+    const allowedUsers = ['Naho-ad', 'L-ad'];
+    if (allowedUsers.includes(currentUser.name)) adminPanel.style.display = 'block';
+    else adminPanel.style.display = 'none';
+}
+
+function setupHero() {
+    const sourceMovies = window.moviesList.originalOrder || window.moviesList;
+    const sourceSeries = window.seriesList.originalOrder || window.seriesList;
+    const allContent = [...sourceMovies, ...sourceSeries];
+    featuredList = [];
+    if (window.HERO_IDS && Array.isArray(window.HERO_IDS) && window.HERO_IDS.length > 0) {
+        window.HERO_IDS.forEach(function(config) {
+            let targetId = config;
+            let customImg = null;
+            if (typeof config === 'object' && config !== null) { targetId = config.id; customImg = config.img; }
+            const foundItem = allContent.find(function(item) { return String(item.id) === String(targetId); });
+            if (foundItem) {
+                const heroItem = Object.assign({}, foundItem);
+                if (customImg) heroItem.image = customImg;
+                featuredList.push(heroItem);
+            }
+        });
+    } else {
+        featuredList = allContent.filter(function(i) { return i.featured; });
+        if (featuredList.length === 0 && allContent.length > 0) featuredList = allContent.slice(0, 5);
+    }
+    renderHero();
+    startAutoSlide();
+}
+
+function renderHero() {
+    const container = document.querySelector('.carousel-container');
+    const dots = document.getElementById('heroDots');
+    if (!container) return;
+    if (featuredList.length === 0) { container.innerHTML = ''; if (dots) dots.innerHTML = ''; return; }
+    container.innerHTML = featuredList.map(function(item, i) {
+        return '<div class="carousel-slide ' + (i === 0 ? 'active' : '') + ' img-loader"><img src="' + item.image + '" alt="Hero Image" class="smooth-image" onload="this.parentElement.classList.remove(\'img-loader\'); this.classList.add(\'loaded\')" ' + (i === 0 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"') + ' decoding="async"></div>';
+    }).join('');
+    if (dots) dots.innerHTML = featuredList.map(function(_, i) { return '<span class="dot ' + (i === 0 ? 'active' : '') + '"></span>'; }).join('');
+}
+
+function nextHeroSlide() { updateHeroVisuals((currentHeroIndex + 1) % featuredList.length); }
+function prevHeroSlide() { updateHeroVisuals((currentHeroIndex - 1 + featuredList.length) % featuredList.length); }
+
+function updateHeroVisuals(index) {
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.dot');
+    if (slides.length === 0) return;
+    slides[currentHeroIndex].style.display = 'none';
+    if (dots[currentHeroIndex]) dots[currentHeroIndex].classList.remove('active');
+    currentHeroIndex = index;
+    slides[currentHeroIndex].style.display = 'block';
+    if (dots[currentHeroIndex]) dots[currentHeroIndex].classList.add('active');
+}
+
+function startAutoSlide() {
+    clearInterval(autoSlideInterval);
+    autoSlideInterval = setInterval(nextHeroSlide, 5000);
+}
+
+function setupLatelyNew() {
+    const container = document.getElementById('latelyNewGrid');
+    if (!container) return;
+    const targetIds = window.LATELY_IDS || [];
+    if (!Array.isArray(targetIds) || targetIds.length === 0) return;
+    const sourceMovies = window.moviesList.originalOrder || window.moviesList;
+    const sourceSeries = window.seriesList.originalOrder || window.seriesList;
+    const allContent = [...sourceMovies, ...sourceSeries];
+    const displayList = [];
+    targetIds.forEach(function(entry) {
+        let id = null, overrideImg = null;
+        if (typeof entry === 'object' && entry !== null) { id = entry.id; overrideImg = entry.img || null; }
+        else id = entry;
+        if (!id) return;
+        const item = allContent.find(function(i) { return String(i.id) === String(id); });
+        if (item) {
+            const copy = Object.assign({}, item);
+            if (overrideImg) copy.image = overrideImg;
+            displayList.push(copy);
+        }
+    });
+    container.innerHTML = displayList.map(function(item, index) { return createItemHTML(item, index); }).join('');
+}
+
+function renderHomeView() {
+    renderMultiRow('homeMoviesRow', window.moviesList.slice(0, 30));
+    renderMultiRow('homeSeriesRow', window.seriesList.slice(0, 30));
+}
+
+function renderList(containerId, list) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = list.map(function(item, i) { return createItemHTML(item, i); }).join('');
+}
+
+function renderMultiRow(containerId, list) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+        const chunk = list.slice(i * 10, i * 10 + 10);
+        if (chunk.length === 0) break;
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row horizontal-scroll';
+        rowDiv.innerHTML = chunk.map(function(item, j) { return createItemHTML(item, j); }).join('');
+        container.appendChild(rowDiv);
+    }
+}
+
+function createItemHTML(item, index, sizeMode) {
+    index = index !== undefined ? index : 100;
+    sizeMode = sizeMode || null;
+    const type = item.seasons ? 'series' : 'movies';
+    const safeId = String(item.id).replace(/'/g, "\\'");
+    const loadMode = index < 6 ? 'eager' : 'lazy';
+    let inlineStyle = '';
+    if (sizeMode === 'category-horizontal') {
+        if (document && document.body && document.body.classList.contains('grid-small')) {
+            inlineStyle = 'style="width: calc(25% - 8px); margin-bottom: 5px;"';
+        } else {
+            inlineStyle = 'style="width: calc(33.333% - 7px); margin-bottom: 8px;"';
+        }
+        return '<div class="item img-loader" ' + inlineStyle + ' data-id="' + safeId + '"><img src="' + item.image + '" class="smooth-image" onload="this.parentElement.classList.remove(\'img-loader\'); this.classList.add(\'loaded\')" loading="' + loadMode + '" decoding="async" alt="' + item.title + '" onclick="openModal(\'' + safeId + '\', \'' + type + '\')"><div class="item-title">' + item.title + '</div></div>';
+    }
+    return '<div class="item img-loader" ' + inlineStyle + ' data-id="' + safeId + '" onclick="openModal(\'' + safeId + '\', \'' + type + '\')"><img src="' + item.image + '" class="smooth-image" onload="this.parentElement.classList.remove(\'img-loader\'); this.classList.add(\'loaded\')" loading="' + loadMode + '" decoding="async" alt="' + item.title + '"><div class="item-title">' + item.title + '</div></div>';
+}
+
+function openFilterModal(context) {
+    currentFilterContext = context;
+    const modal = document.getElementById('filterModal');
+    if (context === 'movies') tempFilters = [...movieFilters];
+    else tempFilters = [...seriesFilters];
+    renderFilterChips();
+    modal.style.display = 'flex';
+}
+
+function renderFilterChips() {
+    const container = document.getElementById('genresContainer');
+    container.innerHTML = '';
+    ALL_GENRES.forEach(function(genre) {
+        const btn = document.createElement('button');
+        const isSelected = tempFilters.some(function(f) { return normalizeText(f) === normalizeText(genre); });
+        btn.className = 'genre-tag' + (isSelected ? ' selected' : '');
+        btn.innerText = genre;
+        btn.onclick = function() {
+            const existsIndex = tempFilters.findIndex(function(f) { return normalizeText(f) === normalizeText(genre); });
+            if (existsIndex !== -1) { tempFilters.splice(existsIndex, 1); btn.classList.remove('selected'); }
+            else { tempFilters.push(genre); btn.classList.add('selected'); }
+        };
+        container.appendChild(btn);
+    });
+}
+
+function applyFilters() {
+    if (currentFilterContext === 'movies') { movieFilters = [...tempFilters]; renderFilteredMovies(); }
+    else { seriesFilters = [...tempFilters]; renderFilteredSeries(); }
+    document.getElementById('filterModal').style.display = 'none';
+}
+
+function clearFilters() {
+    tempFilters = [];
+    if (currentFilterContext === 'movies') { movieFilters = []; renderFilteredMovies(); }
+    else { seriesFilters = []; renderFilteredSeries(); }
+    document.getElementById('filterModal').style.display = 'none';
+}
+
+function getItemGenres(item) {
+    if (Array.isArray(item.genres)) return item.genres;
+    if (typeof item.genre === 'string') return item.genre.split(',').map(function(g) { return g.trim(); });
+    if (Array.isArray(item.genre)) return item.genre;
+    return [];
+}
+
+function renderFilteredMovies() {
+    const container = document.getElementById('allMoviesGrid');
+    const displayFilterText = document.getElementById('activeFiltersMovies');
+    const catContainer = document.getElementById('movieCategoriesContainer');
+    let listToShow = [...window.moviesList];
+    if (movieFilters.length > 0) {
+        displayFilterText.innerText = "Filtros: " + movieFilters.join(", ");
+        displayFilterText.style.display = 'block';
+        if (catContainer) catContainer.style.display = 'none';
+        listToShow = listToShow.filter(function(item) {
+            const itemGenres = getItemGenres(item);
+            return movieFilters.some(function(filter) { return itemGenres.some(function(ig) { return normalizeText(ig) === normalizeText(filter); }); });
+        });
+    } else {
+        displayFilterText.style.display = 'none';
+        if (catContainer) catContainer.style.display = 'block';
+    }
+    if (listToShow.length === 0) container.innerHTML = '<p style="padding:20px; color:#666; width:100%; text-align:center;">No hay resultados.</p>';
+    else renderList('allMoviesGrid', listToShow);
+}
+
+function renderFilteredSeries() {
+    const container = document.getElementById('allSeriesGrid');
+    const displayFilterText = document.getElementById('activeFiltersSeries');
+    const catContainer = document.getElementById('seriesCategoriesContainer');
+    let listToShow = [...window.seriesList];
+    if (seriesFilters.length > 0) {
+        displayFilterText.innerText = "Filtros: " + seriesFilters.join(", ");
+        displayFilterText.style.display = 'block';
+        if (catContainer) catContainer.style.display = 'none';
+        listToShow = listToShow.filter(function(item) {
+            const itemGenres = getItemGenres(item);
+            return seriesFilters.some(function(filter) { return itemGenres.some(function(ig) { return normalizeText(ig) === normalizeText(filter); }); });
+        });
+    } else {
+        displayFilterText.style.display = 'none';
+        if (catContainer) catContainer.style.display = 'block';
+    }
+    if (listToShow.length === 0) container.innerHTML = '<p style="padding:20px; color:#666; width:100%; text-align:center;">No hay resultados.</p>';
+    else renderList('allSeriesGrid', listToShow);
+}
+
+function openModal(id, typeHint, fromDeepLink) {
+    fromDeepLink = fromDeepLink || false;
+    wasSearchOpen = document.getElementById('searchOverlay').style.display === 'block';
+    wasHistoryOpen = document.getElementById('historyOverlay').style.display === 'block';
+    document.getElementById('searchOverlay').style.display = 'none';
+    document.getElementById('historyOverlay').style.display = 'none';
+
+    const idStr = String(id);
+    const allContent = [...window.moviesList, ...window.seriesList];
+    const item = allContent.find(function(i) { return String(i.id) === idStr; });
+    if (!item) return;
+
+    currentModalItem = item;
+    const isSeries = (item.seasons && item.seasons.length > 0) || typeHint === 'series';
+
+    if (!fromDeepLink) {
+        let cleanUrl = window.location.origin + window.location.pathname;
+        if (!isSeries) cleanUrl += '?movie=' + item.id + '-' + (item.year || '2025');
+        if (!document.body.classList.contains('modal-open')) {
+            window.history.pushState({ view: currentView, modal: true, search: wasSearchOpen, history: wasHistoryOpen }, '', isSeries ? '' : cleanUrl);
+        } else if (!isSeries) {
+            window.history.replaceState({ view: currentView, modal: true, search: wasSearchOpen, history: wasHistoryOpen }, '', cleanUrl);
+        }
+    }
+
+    const modal = document.getElementById('videoModal');
+    const titleEl = document.getElementById('modalTitle');
+    const descEl = document.getElementById('modalDesc');
+    const actionBtn = document.getElementById('modalActionBtn');
+    const episodesDiv = document.getElementById('seriesEpisodeSelector');
+    const favBtn = document.getElementById('modalFavBtn');
+    const shareBtn = document.getElementById('modalShareItemBtn');
+    const yearEl = document.getElementById('modalYear');
+    const sepEl = document.getElementById('modalSeparator');
+    const genresEl = document.getElementById('modalGenres');
+
+    document.body.classList.add('modal-open');
+    document.querySelector('.modal-content').scrollTop = 0;
+    modal.style.display = 'flex';
+    titleEl.innerText = item.title;
+    yearEl.innerText = item.year || '';
+    descEl.innerText = item.info || '';
+
+    const g = getItemGenres(item);
+    let genreDisplay = '';
+    if (g.length > 0) {
+        genreDisplay = g.slice(0, 3).join(' / ');
+        if (g.length > 3) genreDisplay += '...';
+    }
+    if (genreDisplay) {
+        genresEl.innerText = genreDisplay;
+        sepEl.style.display = 'inline';
+        genresEl.style.display = 'inline';
+    } else {
+        sepEl.style.display = 'none';
+        genresEl.style.display = 'none';
+    }
+
+    const isFav = myFavorites.some(function(i) { return String(i.id) === String(item.id); });
+    if (isFav) favBtn.classList.add('active'); else favBtn.classList.remove('active');
+    favBtn.onclick = toggleFavorite;
+
+    if (shareBtn) {
+        shareBtn.onclick = function() {
+            const baseUrl = window.location.origin + window.location.pathname;
+            let shareUrl = baseUrl;
+            const currentYear = new Date().getFullYear();
+            if (!isSeries) {
+                shareUrl += '?movie=' + item.id + '-' + (item.year || currentYear);
+            } else {
+                const seasonObj = item.seasons[currentSeasonIndex];
+                const activeEpBtn = document.querySelector('.episode-button.active');
+                let epNumber = 1;
+                if (activeEpBtn) {
+                    const idx = parseInt(activeEpBtn.getAttribute('data-idx'));
+                    if (!isNaN(idx) && seasonObj.episodes[idx]) epNumber = seasonObj.episodes[idx].episode;
+                }
+                shareUrl += '?serie=' + item.id + '-t' + seasonObj.season + '-e' + epNumber;
+            }
+            if (navigator.share) {
+                navigator.share({ title: 'Ver ' + item.title + " en Auraflix's", text: 'Mira ' + item.title + ' aquí:', url: shareUrl }).catch(function() {});
+            } else {
+                const tempInput = document.createElement('input');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast("Enlace copiado al portapapeles");
+            }
+        };
+    }
+
+    const isVipGlobal = isAdminUnlocked ? true : (typeof isUserVip === 'function' ? isUserVip() : false);
+
+    if (isSeries) {
+        episodesDiv.classList.remove('hidden');
+        if (item.seasons && item.seasons.length > 0) {
+            let startSeasonIdx = 0;
+            let startEpIdx = 0;
+            if (window.deepLinkSeason && window.deepLinkEpisode) {
+                const sIdx = item.seasons.findIndex(function(s) { return parseInt(s.season) === window.deepLinkSeason; });
+                if (sIdx !== -1) {
+                    startSeasonIdx = sIdx;
+                    const eIdx = item.seasons[sIdx].episodes.findIndex(function(e) { return parseInt(e.episode) === window.deepLinkEpisode; });
+                    if (eIdx !== -1) startEpIdx = eIdx;
+                }
+                window.deepLinkSeason = null;
+                window.deepLinkEpisode = null;
+            } else {
+                const mem = seriesMemory[item.id];
+                if (mem) {
+                    const sIdx = item.seasons.findIndex(function(s) { return String(s.season) === String(mem.season); });
+                    if (sIdx !== -1) {
+                        startSeasonIdx = sIdx;
+                        const eIdx = item.seasons[sIdx].episodes.findIndex(function(e) { return String(e.episode) === String(mem.episode); });
+                        if (eIdx !== -1) startEpIdx = eIdx;
+                    }
+                }
+            }
+            currentSeasonIndex = startSeasonIdx;
+            document.getElementById('currentSeasonText').innerText = 'Temporada ' + item.seasons[currentSeasonIndex].season;
+            if (!fromDeepLink) {
+                const cleanUrl = window.location.origin + window.location.pathname + '?serie=' + item.id + '-t' + item.seasons[currentSeasonIndex].season + '-e' + item.seasons[currentSeasonIndex].episodes[startEpIdx].episode;
+                window.history.replaceState({ view: currentView, modal: true, search: wasSearchOpen, history: wasHistoryOpen }, '', cleanUrl);
+            }
+            renderEpisodes(item.seasons[currentSeasonIndex], item, startEpIdx);
+            const btnSeason = document.getElementById('btnOpenSeasonModal');
+            if (btnSeason) btnSeason.onclick = openSeasonSelectorModal;
+        }
+        actionBtn.innerHTML = '<i class="fas fa-film"></i> Ver Tráiler';
+        actionBtn.onclick = function() {
+            setPlayerVideo(item.trailer, "Tráiler", false);
+            document.querySelectorAll('.episode-button').forEach(function(b) { b.classList.remove('active'); });
+        };
+
+    } else {
+        episodesDiv.classList.add('hidden');
+        const isUnlockedViaMemory = isTicketCurrentlyUnlocked(String(item.id));
+        const isUnlockedViaLink = (window.unlockedItemId === String(item.id));
+        const hasAccess = (window.VIP_SYSTEM_STATUS === 'off' && window.UNLOCK_LINK_STATUS === 'off')
+            ? true : (isVipGlobal || isUnlockedViaLink || isUnlockedViaMemory);
+        if (shareBtn) shareBtn.style.display = hasAccess ? 'flex' : 'none';
+        if (hasAccess) addToContinueWatching(item, 'movies');
+        setPlayerVideo(item.video, null, !hasAccess);
+        isPlayingTrailer = false;
+        actionBtn.innerHTML = '<i class="fas fa-film"></i> Ver Tráiler';
+        actionBtn.onclick = function() {
+            if (isPlayingTrailer) {
+                setPlayerVideo(item.video, null, !hasAccess);
+                actionBtn.innerHTML = '<i class="fas fa-film"></i> Ver Tráiler';
+                isPlayingTrailer = false;
+            } else {
+                setPlayerVideo(item.trailer, "Tráiler", false);
+                actionBtn.innerHTML = '<i class="fas fa-play"></i> Ver Película';
+                isPlayingTrailer = true;
+            }
+        };
+    }
+    renderRealRecommendations(item.id);
+}
+
+function openSeasonSelectorModal() {
+    if (!currentModalItem || !currentModalItem.seasons) return;
+    const seasonModal = document.getElementById('seasonSelectorModal');
+    const container = document.getElementById('seasonListContainer');
+    container.innerHTML = '';
+    currentModalItem.seasons.forEach(function(seasonObj, index) {
+        const itemBtn = document.createElement('button');
+        itemBtn.className = 'season-modal-item' + (index === currentSeasonIndex ? ' active' : '');
+        itemBtn.innerHTML = '<span>Temporada ' + seasonObj.season + '</span><div class="season-radio-circle"></div>';
+        itemBtn.onclick = function() {
+            currentSeasonIndex = index;
+            document.getElementById('currentSeasonText').innerText = 'Temporada ' + seasonObj.season;
+            renderEpisodes(seasonObj, currentModalItem, 0);
+            seasonModal.style.display = 'none';
+        };
+        container.appendChild(itemBtn);
+    });
+    seasonModal.style.display = 'flex';
+}
+
+function renderEpisodes(season, serieItem, autoPlayIndex) {
+    autoPlayIndex = autoPlayIndex !== undefined ? autoPlayIndex : -1;
+    const container = document.getElementById('modalEpisodesContainer');
+    container.innerHTML = '';
+    if (!season || !season.episodes) return;
+    const countLabel = document.getElementById('episodesCountLabel');
+    if (countLabel) countLabel.innerText = season.episodes.length + ' Capítulos';
+    container.innerHTML = season.episodes.map(function(ep, idx) {
+        return '<button class="episode-button' + (idx === autoPlayIndex ? ' active' : '') + '" data-idx="' + idx + '">' + ep.episode + '</button>';
+    }).join('');
+
+    const isVipGlobal = isAdminUnlocked ? true : (typeof isUserVip === 'function' ? isUserVip() : false);
+    const shareBtn = document.getElementById('modalShareItemBtn');
+
+    function checkAccess(ep) {
+        if (isAdminUnlocked) return true;
+        if (window.VIP_SYSTEM_STATUS === 'off' && window.UNLOCK_LINK_STATUS === 'off') return true;
+        if (isVipGlobal) return true;
+        const ticketKey = serieItem.id + '-t' + season.season + '-e' + ep.episode;
+        const inMemory = isTicketCurrentlyUnlocked(ticketKey);
+        const justUnlocked = (window.unlockedItemId === String(serieItem.id) && window.unlockedSeason === parseInt(season.season) && window.unlockedEpisode === parseInt(ep.episode));
+        return inMemory || justUnlocked;
+    }
+
+    if (autoPlayIndex >= 0 && season.episodes[autoPlayIndex]) {
+        const ep = season.episodes[autoPlayIndex];
+        const hasAccess = checkAccess(ep);
+        if (shareBtn) shareBtn.style.display = hasAccess ? 'flex' : 'none';
+        if (hasAccess) addToContinueWatching(serieItem, 'series');
+        setPlayerVideo(ep.video, 'T' + season.season + ': Cap ' + ep.episode, !hasAccess);
+        seriesMemory[serieItem.id] = { season: season.season, episode: ep.episode };
+        localStorage.setItem('auraflixSeriesMemory', JSON.stringify(seriesMemory));
+        const cleanUrl = window.location.origin + window.location.pathname + '?serie=' + serieItem.id + '-t' + season.season + '-e' + ep.episode;
+        window.history.replaceState({ view: currentView, modal: true, search: wasSearchOpen, history: wasHistoryOpen }, '', cleanUrl);
+    }
+
+    const buttons = container.querySelectorAll('.episode-button');
+    buttons.forEach(function(btn, index) {
+        btn.onclick = function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            const ep = season.episodes[index];
+            const hasAccess = checkAccess(ep);
+            if (shareBtn) shareBtn.style.display = hasAccess ? 'flex' : 'none';
+            if (hasAccess) addToContinueWatching(serieItem, 'series');
+            setPlayerVideo(ep.video, 'T' + season.season + ': Cap ' + ep.episode, !hasAccess);
+            seriesMemory[serieItem.id] = { season: season.season, episode: ep.episode };
+            localStorage.setItem('auraflixSeriesMemory', JSON.stringify(seriesMemory));
+            const cleanUrl = window.location.origin + window.location.pathname + '?serie=' + serieItem.id + '-t' + season.season + '-e' + ep.episode;
+            window.history.replaceState({ view: currentView, modal: true, search: wasSearchOpen, history: wasHistoryOpen }, '', cleanUrl);
+        };
+    });
+}
+
+const OUO_PREFIX = 'https://ouo.io/qs/U5nWPP5R?s=';
+
+function buildUnlockedDestUrlForCurrentItem() {
+    if (!currentModalItem) return null;
+    const base = (typeof AURA_LINKS !== 'undefined' && AURA_LINKS.webPage) ? AURA_LINKS.webPage : (window.location.origin + window.location.pathname);
+    const currentYear = new Date().getFullYear();
+    if (!currentModalItem.seasons) {
+        return base + '?movie=' + currentModalItem.id + '-' + (currentModalItem.year || currentYear) + '-vip';
+    } else {
+        const seasonObj = currentModalItem.seasons[currentSeasonIndex];
+        let epNumber = null;
+        const activeEpBtn = document.querySelector('.episode-button.active');
+        if (activeEpBtn) {
+            const idx = parseInt(activeEpBtn.getAttribute('data-idx'));
+            if (!isNaN(idx) && seasonObj.episodes[idx]) epNumber = seasonObj.episodes[idx].episode;
+        }
+        if (!epNumber && seasonObj.episodes && seasonObj.episodes.length > 0) epNumber = seasonObj.episodes[0].episode;
+        if (!epNumber) epNumber = 1;
+        return base + '?serie=' + currentModalItem.id + '-t' + seasonObj.season + '-e' + epNumber + '-vip';
+    }
+}
+
+window.executeUnlock = function() {
+    if (!currentModalItem) return;
+    let ticketKey = null;
+    if (!currentModalItem.seasons) {
+        ticketKey = String(currentModalItem.id);
+    } else {
+        const seasonObj = currentModalItem.seasons[currentSeasonIndex];
+        const activeEpBtn = document.querySelector('.episode-button.active');
+        let epNumber = 1;
+        if (activeEpBtn) {
+            const idx = parseInt(activeEpBtn.getAttribute('data-idx'));
+            if (!isNaN(idx) && seasonObj.episodes[idx]) epNumber = seasonObj.episodes[idx].episode;
+        } else if (seasonObj.episodes.length > 0) {
+            epNumber = seasonObj.episodes[0].episode;
+        }
+        ticketKey = currentModalItem.id + '-t' + seasonObj.season + '-e' + epNumber;
+    }
+    localStorage.setItem('auraflix_tkt_' + ticketKey, new Date().getTime());
+    localStorage.setItem('auraflix_return_token', ticketKey);
+    const dest = buildUnlockedDestUrlForCurrentItem();
+    if (dest) {
+        window.location.assign(OUO_PREFIX + encodeURIComponent(dest));
+    } else {
+        showToast("No se pudo generar el enlace de desbloqueo.");
+    }
+};
+
+window.showUnlockWarning = function() {
+    const skipUntil = localStorage.getItem('auraflixSkipUnlockWarning');
+    const now = new Date().getTime();
+    if (skipUntil && now < parseInt(skipUntil)) { executeUnlock(); return; }
+    const modal = document.getElementById('unlockWarningModal');
+    const videoContainer = document.getElementById('unlockTutorialContainer');
+    const tutUrl = (typeof window.VIP_CONFIG !== 'undefined' && window.VIP_CONFIG.tutorialVideo) ? window.VIP_CONFIG.tutorialVideo : "https://player.vimeo.com/video/1182848699";
+    videoContainer.innerHTML = '<iframe src="' + tutUrl + '" allowfullscreen frameborder="0" style="width:100%; height:100%; position:absolute; top:0; left:0;"></iframe>';
+    document.getElementById('dontShowUnlockWarning').checked = false;
+    modal.style.display = 'flex';
+};
+
+function setPlayerVideo(url, overlayText, isBlocked) {
+    overlayText = overlayText || null;
+    isBlocked = isBlocked || false;
+
+    clearSeekRetry();
+    window.__auraHasSeeked = false;
+    window.__auraSeekTarget = null;
+
+    const playerDiv = document.getElementById('modalContentPlayer');
+    playerDiv.innerHTML = '';
+
+    if (window.__auraPlayerTimeInterval) {
+        clearInterval(window.__auraPlayerTimeInterval);
+        window.__auraPlayerTimeInterval = null;
+    }
+
+    if (!url) {
+        playerDiv.innerHTML = '<div class="video-container" style="display:flex;align-items:center;justify-content:center;color:gray;">Video no disponible</div>';
+        return;
+    }
+
+    if (isAdminUnlocked) isBlocked = false;
+    if (window.VIP_SYSTEM_STATUS === 'off' && window.UNLOCK_LINK_STATUS === 'off') isBlocked = false;
+
+    const container = document.createElement('div');
+    container.className = 'video-container';
+    container.style.position = 'relative';
+    container.style.width = '100%';
+    container.style.height = '100%';
+
+    let finalUrl = ensurePlayerApi(url);
+    if (finalUrl.includes('youtube.com/watch?v=')) {
+        finalUrl = finalUrl.replace('youtube.com/watch?v=', 'youtube.com/embed/');
+        const ampIdx = finalUrl.indexOf('&');
+        if (ampIdx !== -1) finalUrl = finalUrl.substring(0, ampIdx);
+    } else if (finalUrl.includes('youtu.be/')) {
+        finalUrl = finalUrl.replace('youtu.be/', 'youtube.com/embed/');
+        const qIdx = finalUrl.indexOf('?');
+        if (qIdx !== -1) finalUrl = finalUrl.substring(0, qIdx);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'videoPlayer';
+    iframe.src = finalUrl;
+    iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture; screen-wake-lock');
+    iframe.setAttribute('allowfullscreen', 'true');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    if (isBlocked) iframe.style.pointerEvents = 'none';
+
+    currentPlayerIframe = iframe;
+    try { currentPlayerOrigin = new URL(finalUrl).origin; } catch (err) { currentPlayerOrigin = null; }
+    currentPlayerProgressKey = buildPlayerProgressKey(finalUrl, overlayText);
+    installPlayerMessageHandler();
+
+    const savedTime = currentPlayerProgressKey ? localStorage.getItem(currentPlayerProgressKey) : null;
+    const seekTo = savedTime ? parseFloat(savedTime) : null;
+
+    if (seekTo && seekTo > 5) {
+        iframe.addEventListener('load', function() {
+            if (window.__auraHasSeeked) return;
+            window.__auraHasSeeked = true;
+            clearSeekRetry();
+            setTimeout(function() {
+                if (!currentPlayerIframe || !currentPlayerIframe.contentWindow) return;
+                currentPlayerIframe.contentWindow.postMessage({ command: 'seek', value: seekTo }, currentPlayerOrigin || '*');
+                window.__auraSeekTarget = seekTo;
+                setTimeout(function() {
+                    if (!currentPlayerIframe || !currentPlayerIframe.contentWindow) return;
+                    currentPlayerIframe.contentWindow.postMessage({ command: 'play' }, currentPlayerOrigin || '*');
+                    setTimeout(function() {
+                        if (window.__auraSeekTarget !== null) {
+                            attemptSeekWithRetry(seekTo, 3);
+                        }
+                    }, 1500);
+                }, 600);
+            }, 1200);
+
+            if (!window.__auraPlayerTimeInterval) {
+                window.__auraPlayerTimeInterval = setInterval(function() {
+                    if (currentPlayerIframe && currentPlayerIframe.contentWindow && currentPlayerOrigin) {
+                        currentPlayerIframe.contentWindow.postMessage({ command: 'getTime' }, currentPlayerOrigin);
+                    }
+                }, 5000);
+            }
+        });
+    } else {
+        iframe.addEventListener('load', function() {
+            if (!window.__auraPlayerTimeInterval) {
+                window.__auraPlayerTimeInterval = setInterval(function() {
+                    if (currentPlayerIframe && currentPlayerIframe.contentWindow && currentPlayerOrigin) {
+                        currentPlayerIframe.contentWindow.postMessage({ command: 'getTime' }, currentPlayerOrigin);
+                    }
+                }, 5000);
+            }
+        });
+    }
+
+    container.appendChild(iframe);
+
+    if (isBlocked) {
+        const blockerDiv = document.createElement('div');
+        blockerDiv.className = 'vip-player-overlay';
+        let buttonsHtml = '';
+        if (window.UNLOCK_LINK_STATUS === 'on' || typeof window.UNLOCK_LINK_STATUS === 'undefined') {
+            buttonsHtml += '<button onclick="showUnlockWarning()" class="vip-redirect-btn" style="background: linear-gradient(45deg, #8A2BE2, #A66BFF); margin-bottom: 12px; width: 100%; box-shadow: 0 0 10px rgba(138, 43, 226, 0.5);"><i class="fas fa-unlock"></i> Desbloquear Contenido</button>';
+        }
+        if (window.VIP_SYSTEM_STATUS === 'on' || typeof window.VIP_SYSTEM_STATUS === 'undefined') {
+            buttonsHtml += '<button onclick="redirectToVipProfile()" class="vip-redirect-btn" style="width: 100%;"><i class="fas fa-crown"></i> Ser miembro VIP</button>';
+        }
+        if (buttonsHtml === '') buttonsHtml = '<p style="color:#aaa; font-size:0.9rem;">Contenido restringido.</p>';
+        blockerDiv.innerHTML = '<i class="fas fa-lock vip-lock-icon"></i><p class="vip-overlay-text" style="margin-bottom: 25px;">Contenido Bloqueado</p><div style="display: flex; flex-direction: column; width: 85%; max-width: 250px;">' + buttonsHtml + '</div>';
+        container.appendChild(blockerDiv);
+    }
+
+    playerDiv.appendChild(container);
+}
+
+function renderRealRecommendations(currentId) {
+    const container = document.getElementById('modalRecommendations');
+    if (!container || !currentModalItem) return;
+    const allContent = [...window.moviesList, ...window.seriesList];
+    const currentGenres = getItemGenres(currentModalItem).map(function(g) { return normalizeText(g); });
+    const candidates = allContent.filter(function(i) { return String(i.id) !== String(currentId); });
+    const related = [];
+    const others = [];
+    candidates.forEach(function(item) {
+        const itemGenres = getItemGenres(item).map(function(g) { return normalizeText(g); });
+        if (itemGenres.some(function(g) { return currentGenres.includes(g); })) related.push(item);
+        else others.push(item);
+    });
+    shuffleArray(related);
+    shuffleArray(others);
+    let finalSelection = [...related];
+    if (finalSelection.length < 6) finalSelection = finalSelection.concat(others.slice(0, 6 - finalSelection.length));
+    else finalSelection = finalSelection.slice(0, 6);
+    container.innerHTML = finalSelection.map(function(item) { return createItemHTML(item); }).join('');
+}
+
+function closeModalInternal() {
+    const modal = document.getElementById('videoModal');
+    if (modal) modal.style.display = 'none';
+    const player = document.getElementById('modalContentPlayer');
+    if (player) player.innerHTML = '';
+    clearSeekRetry();
+    if (window.__auraPlayerTimeInterval) {
+        clearInterval(window.__auraPlayerTimeInterval);
+        window.__auraPlayerTimeInterval = null;
+    }
+    currentPlayerIframe = null;
+    currentPlayerOrigin = null;
+    currentPlayerProgressKey = null;
+    window.__auraHasSeeked = false;
+    window.__auraSeekTarget = null;
+    document.body.classList.remove('modal-open');
+    const seasonModal = document.getElementById('seasonSelectorModal');
+    if (seasonModal) seasonModal.style.display = 'none';
+    window.unlockedItemId = null;
+    window.unlockedSeason = null;
+    window.unlockedEpisode = null;
+    if (wasSearchOpen) document.getElementById('searchOverlay').style.display = 'block';
+    if (wasHistoryOpen) document.getElementById('historyOverlay').style.display = 'block';
+}
+
+function addToContinueWatching(item, type) {
+    continueWatching = continueWatching.filter(function(i) { return String(i.id) !== String(item.id); });
+    continueWatching.unshift(Object.assign({}, item, { type: type }));
+    if (continueWatching.length > 20) continueWatching.pop();
+    localStorage.setItem('continueWatching', JSON.stringify(continueWatching));
+}
+
+function toggleFavorite() {
+    if (!currentModalItem) return;
+    const index = myFavorites.findIndex(function(i) { return String(i.id) === String(currentModalItem.id); });
+    const btn = document.getElementById('modalFavBtn');
+    if (index === -1) {
+        myFavorites.unshift(currentModalItem);
+        if (btn) btn.classList.add('active');
+        showToast("Agregado a Favoritos");
+    } else {
+        myFavorites.splice(index, 1);
+        if (btn) btn.classList.remove('active');
+        showToast("Eliminado de Favoritos");
+    }
+    localStorage.setItem('myFavorites', JSON.stringify(myFavorites));
+    renderMyList();
+}
+
+function renderMyList() {
+    const container = document.getElementById('myListRow');
+    if (!container) return;
+    if (myFavorites.length === 0) { container.innerHTML = '<p style="padding:20px; color:#555;">No tienes favoritos aún.</p>'; return; }
+    container.innerHTML = myFavorites.map(function(item) { return createItemHTML(item); }).join('');
+}
+
+function renderHistoryOverlayContent() {
+    const container = document.getElementById('historyResults');
+    if (!container) return;
+    if (continueWatching.length === 0) { container.innerHTML = '<p style="padding:20px; color:#aaa;">No has visto nada recientemente.</p>'; return; }
+    container.innerHTML = continueWatching.map(function(item) { return createItemHTML(item); }).join('');
+}
+
+function renderPopularSearches() {
+    const container = document.getElementById('popularTags');
+    const input = document.getElementById('searchInput');
+    if (!container || !window.busquedasPopulares) return;
+    container.innerHTML = window.busquedasPopulares.map(function(term) { return '<span class="pop-tag">' + term + '</span>'; }).join('');
+    container.querySelectorAll('.pop-tag').forEach(function(tag) {
+        tag.onclick = function() { input.value = tag.innerText; input.dispatchEvent(new Event('input')); };
+    });
+}
+
+function switchView(viewName, pushToHistory) {
+    pushToHistory = pushToHistory !== undefined ? pushToHistory : true;
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-movies').classList.add('hidden');
+    document.getElementById('view-series').classList.add('hidden');
+    document.getElementById('view-profile').classList.add('hidden');
+    document.querySelectorAll('.nav-item').forEach(function(btn) { btn.classList.remove('active'); });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    currentView = viewName;
+    const headerIcons = document.getElementById('headerRightIcons');
+    if (viewName === 'profile') headerIcons.classList.add('hidden-header-icons');
+    else headerIcons.classList.remove('hidden-header-icons');
+    if (viewName === 'home') {
+        document.getElementById('view-home').classList.remove('hidden');
+        document.getElementById('nav-home').classList.add('active');
+    } else if (viewName === 'movies') {
+        document.getElementById('view-movies').classList.remove('hidden');
+        document.getElementById('nav-movies').classList.add('active');
+        renderFilteredMovies();
+    } else if (viewName === 'series') {
+        document.getElementById('view-series').classList.remove('hidden');
+        document.getElementById('nav-series').classList.add('active');
+        renderFilteredSeries();
+    } else if (viewName === 'profile') {
+        document.getElementById('view-profile').classList.remove('hidden');
+        document.getElementById('nav-profile').classList.add('active');
+        renderMyList();
+    }
+    setTimeout(updateNavIndicator, 50);
+    if (pushToHistory) window.history.pushState({ view: viewName, modal: false }, '');
+}
+
+function shareGeneric(title, url) {
+    try {
+        if (navigator.share) { navigator.share({ title: title, url: url }).catch(function() {}); }
+        else {
+            const temp = document.createElement('input');
+            temp.value = url;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast("Enlace copiado al portapapeles");
+        }
+    } catch (e) { showToast("No se pudo compartir."); }
+}
+
+function setupEventListeners() {
+    const hero = document.getElementById('hero');
+    if (hero) {
+        hero.onclick = function(e) {
+            if (Math.abs(touchStartX - touchEndX) < 10 && featuredList[currentHeroIndex]) {
+                const current = featuredList[currentHeroIndex];
+                openModal(current.id, current.seasons ? 'series' : 'movies');
+            }
+        };
+        hero.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+        hero.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) nextHeroSlide();
+            if (touchEndX - touchStartX > 50) prevHeroSlide();
+        }, { passive: true });
+    }
+
+    const navHome = document.getElementById('nav-home');
+    const navMovies = document.getElementById('nav-movies');
+    const navSeries = document.getElementById('nav-series');
+    const navProfile = document.getElementById('nav-profile');
+    if (navHome) navHome.onclick = function(e) { e.preventDefault(); switchView('home'); };
+    if (navMovies) navMovies.onclick = function(e) { e.preventDefault(); switchView('movies'); };
+    if (navSeries) navSeries.onclick = function(e) { e.preventDefault(); switchView('series'); };
+    if (navProfile) navProfile.onclick = function(e) { e.preventDefault(); switchView('profile'); };
+
+    const btnFilterMovies = document.getElementById('btnFilterMovies');
+    const btnFilterSeries = document.getElementById('btnFilterSeries');
+    if (btnFilterMovies) btnFilterMovies.onclick = function() { openFilterModal('movies'); };
+    if (btnFilterSeries) btnFilterSeries.onclick = function() { openFilterModal('series'); };
+
+    const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const closeFilterModal = document.getElementById('closeFilterModal');
+    if (applyFiltersBtn) applyFiltersBtn.onclick = applyFilters;
+    if (clearFiltersBtn) clearFiltersBtn.onclick = clearFilters;
+    if (closeFilterModal) closeFilterModal.onclick = function() { document.getElementById('filterModal').style.display = 'none'; };
+
+    const topSearchBtn = document.getElementById('topSearchBtn');
+    if (topSearchBtn) {
+        topSearchBtn.onclick = function(e) {
+            e.preventDefault();
+            document.getElementById('searchOverlay').style.display = 'block';
+            wasSearchOpen = true;
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            input.focus();
+            document.getElementById('searchResults').innerHTML = '';
+            const popContainer = document.getElementById('popularSearchContainer');
+            if (popContainer) popContainer.style.display = 'block';
+            renderPopularSearches();
+            window.history.pushState({ view: currentView, modal: false, search: true, history: wasHistoryOpen }, '');
+        };
+    }
+
+    const topHistoryBtn = document.getElementById('topHistoryBtn');
+    if (topHistoryBtn) {
+        topHistoryBtn.onclick = function(e) {
+            e.preventDefault();
+            renderHistoryOverlayContent();
+            document.getElementById('historyOverlay').style.display = 'block';
+            wasHistoryOpen = true;
+            window.history.pushState({ view: currentView, modal: false, search: wasSearchOpen, history: true }, '');
+        };
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const val = normalizeText(e.target.value);
+            const container = document.getElementById('searchResults');
+            const popContainer = document.getElementById('popularSearchContainer');
+            container.innerHTML = '';
+            if (val.length > 0) { if (popContainer) popContainer.style.display = 'none'; }
+            else { if (popContainer) popContainer.style.display = 'block'; return; }
+            if (val.length < 2) return;
+            const all = [...window.moviesList, ...window.seriesList];
+            const filtered = all.filter(function(item) {
+                const titleMatch = normalizeText(item.title).includes(val);
+                let tagsMatch = false;
+                if (item.tags && Array.isArray(item.tags)) {
+                    tagsMatch = item.tags.some(function(tag) { return normalizeText(tag).includes(val); });
+                }
+                return titleMatch || tagsMatch;
+            });
+            renderList('searchResults', filtered);
+        });
+    }
+
+    const closeSearch = document.getElementById('closeSearch');
+    if (closeSearch) closeSearch.onclick = function() { wasSearchOpen = false; window.history.back(); };
+
+    const closeHistory = document.getElementById('closeHistory');
+    if (closeHistory) closeHistory.onclick = function() { wasHistoryOpen = false; window.history.back(); };
+
+    const closeModal = document.getElementById('closeModal');
+    if (closeModal) closeModal.addEventListener('click', function() { window.history.back(); });
+
+    const closeSeasonSelector = document.getElementById('closeSeasonSelector');
+    if (closeSeasonSelector) closeSeasonSelector.onclick = function() { document.getElementById('seasonSelectorModal').style.display = 'none'; };
+
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', function() {
+            const nameInput = document.getElementById('usernameInput');
+            const name = nameInput.value.trim();
+            if (name.length < 2) { showToast("Escribe un nombre válido."); return; }
+            if (!selectedAvatarTemp) { showToast("Por favor, elige un avatar."); return; }
+            currentUser = { name: name, avatar: selectedAvatarTemp };
+            localStorage.setItem('auraflixUser', JSON.stringify(currentUser));
+            document.getElementById('loginScreen').style.display = 'none';
+            loadUserDataInUI();
+            initApp();
+        });
+    }
+
+    const profilePageImg = document.getElementById('profilePageImg');
+    if (profilePageImg) {
+        profilePageImg.addEventListener('click', function() {
+            document.getElementById('changeAvatarModal').style.display = 'flex';
+            renderAvatarSelection('changeAvatarGrid', 'modal');
+        });
+    }
+    const closeAvatarModal = document.getElementById('closeAvatarModal');
+    if (closeAvatarModal) closeAvatarModal.addEventListener('click', function() { document.getElementById('changeAvatarModal').style.display = 'none'; });
+    const confirmAvatarChange = document.getElementById('confirmAvatarChange');
+    if (confirmAvatarChange) confirmAvatarChange.addEventListener('click', function() {
+        if (!selectedAvatarTemp) { showToast("Selecciona una imagen."); return; }
+        updateUserProfile(selectedAvatarTemp);
+        document.getElementById('changeAvatarModal').style.display = 'none';
+        showToast("Avatar actualizado");
+    });
+
+    const btnSupport = document.getElementById('btnSupport');
+    if (btnSupport) btnSupport.onclick = function() { document.getElementById('supportModal').style.display = 'flex'; };
+    const closeSupportBtn = document.getElementById('closeSupportBtn');
+    if (closeSupportBtn) closeSupportBtn.onclick = function() { document.getElementById('supportModal').style.display = 'none'; };
+
+    const btnBroadcast = document.getElementById('btnBroadcast');
+    if (btnBroadcast) {
+        btnBroadcast.onclick = function() {
+            if (typeof AURA_LINKS !== 'undefined' && AURA_LINKS.telegram) window.location.href = AURA_LINKS.telegram;
+        };
+    }
+
+    const btnTerms = document.getElementById('btnTerms');
+    if (btnTerms) btnTerms.onclick = function() { document.getElementById('termsModal').style.display = 'flex'; };
+    const closeTermsBtn = document.getElementById('closeTermsBtn');
+    if (closeTermsBtn) closeTermsBtn.onclick = function() { document.getElementById('termsModal').style.display = 'none'; };
+
+    const btnSettings = document.getElementById('btnSettings');
+    if (btnSettings) btnSettings.onclick = function() { document.getElementById('settingsModal').style.display = 'flex'; };
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    if (closeSettingsBtn) closeSettingsBtn.onclick = function() { document.getElementById('settingsModal').style.display = 'none'; };
+
+    const btnShare = document.getElementById('btnShare');
+    if (btnShare) btnShare.onclick = function() { document.getElementById('shareModal').style.display = 'flex'; };
+    const closeShareModal = document.getElementById('closeShareModal');
+    if (closeShareModal) closeShareModal.onclick = function() { document.getElementById('shareModal').style.display = 'none'; };
+
+    const btnShareApp = document.getElementById('btnShareAppVersion');
+    if (btnShareApp) {
+        btnShareApp.onclick = function() {
+            const url = (typeof AURA_LINKS !== 'undefined' && AURA_LINKS.appDownload) ? AURA_LINKS.appDownload : 'https://www.mediafire.com/file/czogy027w6jin5r/XPR_UPDATE.apk/file';
+            shareGeneric("Descarga Auraflix's App", url);
+            document.getElementById('shareModal').style.display = 'none';
+        };
+    }
+    const btnShareWeb = document.getElementById('btnShareWebVersion');
+    if (btnShareWeb) {
+        btnShareWeb.onclick = function() {
+            const url = (typeof AURA_LINKS !== 'undefined' && AURA_LINKS.webPage) ? AURA_LINKS.webPage : 'https://auraflixs.github.io';
+            shareGeneric("Auraflix's Web", url);
+            document.getElementById('shareModal').style.display = 'none';
+        };
+    }
+
+    const btnRedeemCode = document.getElementById('btnRedeemCode');
+    if (btnRedeemCode) btnRedeemCode.onclick = function() { document.getElementById('redeemModal').style.display = 'flex'; };
+    const closeRedeemModal = document.getElementById('closeRedeemModal');
+    if (closeRedeemModal) closeRedeemModal.onclick = function() { document.getElementById('redeemModal').style.display = 'none'; };
+
+    const gridSelect = document.getElementById('gridSizeSelect');
+    if (gridSelect) {
+        gridSelect.value = savedGridSize;
+        gridSelect.addEventListener('change', function(e) {
+            savedGridSize = e.target.value;
+            localStorage.setItem('auraflixGridSize', savedGridSize);
+            showCustomConfirm(
+                "Tamaño de Portadas",
+                "El tamaño se ha cambiado correctamente.",
+                function() { location.reload(); },
+                function() {
+                    if (savedGridSize === 'small') document.body.classList.add('grid-small');
+                    else document.body.classList.remove('grid-small');
+                },
+                "Recargar",
+                "Más tarde"
+            );
+        });
+    }
+
+    const btnCache = document.getElementById('btnCache');
+    if (btnCache) {
+        btnCache.onclick = function() {
+            showCustomConfirm(
+                "Borrar Caché",
+                "¿Estás seguro de borrar tu historial y favoritos?",
+                function() {
+                    localStorage.removeItem('continueWatching');
+                    localStorage.removeItem('myFavorites');
+                    localStorage.removeItem('auraflixSeriesMemory');
+                    localStorage.removeItem('auraflixUnlockedMemory');
+                    localStorage.removeItem('auraflixSkipUnlockWarning');
+                    Object.keys(localStorage).forEach(function(k) {
+                        if (k.startsWith('auraflix_unlocked_until_')) localStorage.removeItem(k);
+                    });
+                    continueWatching = []; myFavorites = []; seriesMemory = {}; unlockedMemory = [];
+                    renderMyList();
+                    showToast("Caché y memoria borradas.");
+                    document.getElementById('settingsModal').style.display = 'none';
+                },
+                null,
+                "Sí, borrar"
+            );
+        };
+    }
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            showCustomConfirm(
+                "Cerrar Sesión",
+                "¿Deseas salir de tu cuenta?",
+                function() { localStorage.clear(); location.reload(); },
+                null,
+                "Salir"
+            );
+        });
+    }
+
+    const btnRequestContent = document.getElementById('btnRequestContent');
+    if (btnRequestContent) {
+        btnRequestContent.onclick = function() {
+            window.open('https://auraflixs.github.io/solicitudes', '_blank');
+        };
+    }
+    const closeRequestModal = document.getElementById('closeRequestModal');
+    if (closeRequestModal) closeRequestModal.onclick = function() { document.getElementById('requestModal').style.display = 'none'; };
+
+    const modalReportBtn = document.getElementById('modalReportBtn');
+    if (modalReportBtn) {
+        modalReportBtn.onclick = function() {
+            if (!currentModalItem) return;
+            let reportTitle = currentModalItem.title;
+            if (currentModalItem.seasons) {
+                const season = currentModalItem.seasons[currentSeasonIndex];
+                if (season) {
+                    reportTitle += ' (Temporada ' + season.season;
+                    const activeEpBtn = document.querySelector('.episode-button.active');
+                    if (activeEpBtn) reportTitle += ' - Episodio ' + activeEpBtn.innerText + ')';
+                    else reportTitle += ')';
+                }
+            }
+            const reportContentTitle = document.getElementById('reportContentTitle');
+            const hiddenReportName = document.getElementById('hiddenReportName');
+            if (reportContentTitle) reportContentTitle.innerText = reportTitle;
+            if (hiddenReportName) hiddenReportName.value = reportTitle;
+            document.getElementById('reportModal').style.display = 'flex';
+        };
+    }
+
+    const closeReportModal = document.getElementById('closeReportModal');
+    if (closeReportModal) closeReportModal.onclick = function() { document.getElementById('reportModal').style.display = 'none'; };
+
+    const closeUnlockWarningBtn = document.getElementById('closeUnlockWarningBtn');
+    if (closeUnlockWarningBtn) {
+        closeUnlockWarningBtn.onclick = function() {
+            const videoContainer = document.getElementById('unlockTutorialContainer');
+            if (videoContainer) videoContainer.innerHTML = '';
+            const modal = document.getElementById('unlockWarningModal');
+            if (modal) modal.style.display = 'none';
+        };
+    }
+    const proceedToUnlockBtn = document.getElementById('proceedToUnlockBtn');
+    if (proceedToUnlockBtn) {
+        proceedToUnlockBtn.onclick = function() {
+            const dontShow = document.getElementById('dontShowUnlockWarning');
+            if (dontShow && dontShow.checked) {
+                localStorage.setItem('auraflixSkipUnlockWarning', String(new Date().getTime() + 7 * 24 * 60 * 60 * 1000));
+            }
+            const videoContainer = document.getElementById('unlockTutorialContainer');
+            if (videoContainer) videoContainer.innerHTML = '';
+            const modal = document.getElementById('unlockWarningModal');
+            if (modal) modal.style.display = 'none';
+            executeUnlock();
+        };
+    }
+}
+
+function renderCustomCategories() {
+    const allContent = [...window.moviesList, ...window.seriesList];
+    if (typeof window.customCategories !== 'undefined') renderCategoryGroup(window.customCategories, 'customCategoriesContainer', allContent);
+    if (typeof window.movieCategories !== 'undefined') renderCategoryGroup(window.movieCategories, 'movieCategoriesContainer', window.moviesList, 'view-movies', 'allMoviesGrid');
+    if (typeof window.seriesCategories !== 'undefined') renderCategoryGroup(window.seriesCategories, 'seriesCategoriesContainer', window.seriesList, 'view-series', 'allSeriesGrid');
+}
+
+function renderCategoryGroup(categoriesData, containerId, contentList, parentId, insertBeforeId) {
+    parentId = parentId || null;
+    insertBeforeId = insertBeforeId || null;
+    if (!Array.isArray(categoriesData)) return;
+    let container = document.getElementById(containerId);
+    if (!container && parentId && insertBeforeId) {
+        const parent = document.getElementById(parentId);
+        const insertBeforeEl = document.getElementById(insertBeforeId);
+        if (parent && insertBeforeEl) {
+            container = document.createElement('div');
+            container.id = containerId;
+            parent.insertBefore(container, insertBeforeEl.previousElementSibling || insertBeforeEl);
+        }
+    }
+    if (!container) return;
+    const isHome = containerId === 'customCategoriesContainer';
+    const rowClass = isHome ? 'row horizontal-scroll' : 'row horizontal-scroll category-horizontal';
+    let htmlOutput = '';
+    categoriesData.forEach(function(category) {
+        const categoryItems = [];
+        category.ids.forEach(function(id) {
+            const item = contentList.find(function(i) { return String(i.id) === String(id); });
+            if (item) categoryItems.push(item);
+        });
+        if (categoryItems.length > 0) {
+            htmlOutput += '<h2 class="section-title">' + category.title + '</h2>';
+            htmlOutput += '<div class="' + rowClass + '">';
+            if (isHome) htmlOutput += categoryItems.map(function(item, idx) { return createItemHTML(item, idx); }).join('');
+            else htmlOutput += categoryItems.map(function(item, idx) { return createItemHTML(item, idx, 'category-horizontal'); }).join('');
+            htmlOutput += '</div>';
+        }
+    });
+    if (htmlOutput !== '' && !isHome) {
+        htmlOutput += '<div style="width: 92%; height: 1px; background-color: #333; margin: 8px auto 2px auto;"></div>';
+    }
+    container.innerHTML = htmlOutput;
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        var tmp = array[i]; array[i] = array[j]; array[j] = tmp;
+    }
+}
+
+window.addEventListener('popstate', function(event) {
+    const modal = document.getElementById('videoModal');
+    if (!event.state || !event.state.modal) {
+        if (modal && modal.style.display === 'flex') closeModalInternal();
+        var idsToHide = ['termsModal', 'settingsModal', 'supportModal', 'filterModal', 'changeAvatarModal', 'seasonSelectorModal', 'requestModal', 'reportModal', 'shareModal'];
+        idsToHide.forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+    }
+    if (event.state && event.state.search) { document.getElementById('searchOverlay').style.display = 'block'; wasSearchOpen = true; }
+    else { document.getElementById('searchOverlay').style.display = 'none'; wasSearchOpen = false; }
+    if (event.state && event.state.history) { document.getElementById('historyOverlay').style.display = 'block'; wasHistoryOpen = true; }
+    else { document.getElementById('historyOverlay').style.display = 'none'; wasHistoryOpen = false; }
+    if (event.state && event.state.view) switchView(event.state.view, false);
+});
