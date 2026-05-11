@@ -1,0 +1,794 @@
+
+local pos = VectorUtil.newVector3
+function Animate(Gui)
+    local scale = 0.5
+    Gui:SetScale(pos(scale, scale, scale))    
+    local timer = LuaTimer:scheduleTicker(function()
+        if scale <= 1 then scale = scale + 0.1 else scale = scale - 0.025 end
+        Gui:SetScale(pos(scale, scale, scale))    
+    end, 1, 10)
+end
+
+function Hide(G) G:SetVisible(false) end
+function Show(G) G:SetVisible(true) end
+
+red = "^FF0000"
+green = "^00FF00"
+cyan = "^00FFFF"
+Gmpanel = GMHelper
+
+local states = {}
+local activeTimers = {}
+local savedPositions = {}
+
+-- === Звуки ===
+function playSound(name, pitch)
+    local player = PlayerManager:getClientPlayer()
+    if player and player.Player then
+        player.Player:playSound(name or "random.click", pitch or 1.0)
+    end
+end
+function toggleHack(btn, hackName, enableFunc, disableFunc, soundOn, soundOff)
+    states[hackName] = not states[hackName]
+    if states[hackName] then
+        btn:SetBackgroundColor({0, 255, 0, 255})
+        UIHelper.showToast(green .. hackName .. ": Включено")
+        playSound(soundOn or "random.orb", 1.0)
+        if enableFunc then enableFunc() end
+    else
+        btn:SetBackgroundColor({0, 0, 0, 0.8})
+        UIHelper.showToast(red .. hackName .. ": Выключено")
+        playSound(soundOff or "random.click", 0.8)
+        if disableFunc then disableFunc() end
+        if activeTimers[hackName] then
+            LuaTimer:cancel(activeTimers[hackName])
+            activeTimers[hackName] = nil
+        end
+    end
+end
+
+
+updateBg = GUIManager:createGUIWindow(GUIType.Layout, tostring(math.random(1, 999e9)))
+updateBg:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateBg:SetVerticalAlignment(VerticalAlignment.Center)
+updateBg:SetHeight({0, 400}); updateBg:SetWidth({0, 500})
+updateBg:SetYPosition({0, 0}); updateBg:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateBg)
+updateBg:SetTouchable(true); Show(updateBg); updateBg:SetLevel(1)
+updateBg:SetBackgroundColor({0, 0, 0, 0.8})
+
+updateScroll = GUIManager:createGUIWindow(GUIType.List, tostring(math.random(1, 999e9)))
+updateScroll:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateScroll:SetVerticalAlignment(VerticalAlignment.Center)
+updateScroll:SetHeight({0, 300}); updateScroll:SetWidth({0, 450})
+updateScroll:SetYPosition({0, 0}); updateScroll:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateScroll)
+updateScroll:SetTouchable(true); updateScroll:SetLevel(1); Show(updateScroll)
+updateScroll:SetMoveAble(true); updateScroll:SetBackgroundColor({0, 0, 0, 0.1})
+
+updateTitle = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+updateTitle:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateTitle:SetVerticalAlignment(VerticalAlignment.Center)
+updateTitle:SetTextHorzAlign(HorizontalAlignment.Center)
+updateTitle:SetTextVertAlign(VerticalAlignment.Center)
+updateTitle:SetHeight({0, 50}); updateTitle:SetWidth({0, 500})
+updateTitle:SetYPosition({0, -170}); updateTitle:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateTitle)
+updateTitle:SetTouchable(true); Show(updateTitle); updateTitle:SetLevel(1)
+updateTitle:SetBordered(true); updateTitle:SetBackgroundColor({0, 0, 0, 0.1})
+
+local hue = 0
+local function interpolateColor(hue)
+    local r, g, b = 0, 0, 0
+    if hue < 60 then r, g, b = 1, hue / 60, 0
+    elseif hue < 120 then r, g, b = (120 - hue) / 60, 1, 0
+    elseif hue < 180 then r, g, b = 0, 1, (hue - 120) / 60
+    elseif hue < 240 then r, g, b = 0, (240 - hue) / 60, 1
+    elseif hue < 300 then r, g, b = (hue - 240) / 60, 0, 1
+    else r, g, b = 1, 0, (360 - hue) / 60 end
+    return r, g, b
+end
+
+function Title()
+    local function UpdateColor()
+        updateTitle:SetText("What's New In Panel v1.0 ?")
+        hue = (hue + 0.5) % 360
+        local r, g, b = interpolateColor(hue)
+        updateTitle:SetTextColor({r, g, b, 2.7})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 50, -1)
+end
+Title()
+
+updateClose = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+updateClose:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateClose:SetVerticalAlignment(VerticalAlignment.Center)
+updateClose:SetTextHorzAlign(HorizontalAlignment.Center)
+updateClose:SetTextVertAlign(VerticalAlignment.Center)
+updateClose:SetHeight({0, 50}); updateClose:SetWidth({0, 50})
+updateClose:SetYPosition({0, -175}); updateClose:SetXPosition({0, 225})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateClose)
+updateClose:SetTouchable(true); Show(updateClose); updateClose:SetLevel(1)
+updateClose:SetBordered(true); updateClose:SetText("×"); updateClose:SetTextScale(1.5)
+updateClose:SetBackgroundColor({1, 0, 0, 0.8})
+
+updateCloseAll = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+updateCloseAll:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateCloseAll:SetVerticalAlignment(VerticalAlignment.Center)
+updateCloseAll:SetTextHorzAlign(HorizontalAlignment.Center)
+updateCloseAll:SetTextVertAlign(VerticalAlignment.Center)
+updateCloseAll:SetHeight({0, 50}); updateCloseAll:SetWidth({0, 100})
+updateCloseAll:SetYPosition({0, -270}); updateCloseAll:SetXPosition({0, 250})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateCloseAll)
+updateCloseAll:SetTouchable(true); Show(updateCloseAll); updateCloseAll:SetLevel(1)
+updateCloseAll:SetBordered(true); updateCloseAll:SetText("Close"); updateCloseAll:SetTextScale(1)
+updateCloseAll:SetBackgroundColor({1, 0, 0, 0.8})
+
+local versionText = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+versionText:SetHorizontalAlignment(HorizontalAlignment.Left)
+versionText:SetVerticalAlignment(VerticalAlignment.Center)
+versionText:SetTextHorzAlign(HorizontalAlignment.Left)
+versionText:SetTextVertAlign(VerticalAlignment.Center)
+versionText:SetHeight({0, 30}); versionText:SetWidth({0, 500})
+versionText:SetYPosition({0, 130}); versionText:SetXPosition({0, 620})
+GUISystem.Instance():GetRootWindow():AddChildWindow(versionText)
+versionText:SetTouchable(false); Show(versionText); versionText:SetBordered(false)
+versionText:SetText("Credit: TYMAH OFFICIAL"); versionText:SetTextColor({1, 0, 0, 1}); versionText:SetTextScale(1.2)
+versionText:SetLevel(1); versionText:SetBackgroundColor({0, 0, 0, 0})
+
+local hue2 = 0
+local function VersionTextColor()
+    local function UpdateColor()
+        hue2 = (hue2 + 0.5) % 360
+        local r, g, b = interpolateColor(hue2)
+        versionText:SetTextColor({r, g, b, 1.7})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 50, -1)
+end
+VersionTextColor()
+
+updateClose:registerEvent(GUIEvent.Click, function()
+    local isVisible = updateBg:IsVisible()
+    if isVisible then
+        Hide(updateTitle); Hide(updateBg); Hide(updateScroll); Hide(updateCloseAll); Hide(versionText)
+        updateClose:SetBackgroundColor({0, 0, 0, 0.8}); updateClose:SetText("!")
+    else
+        Show(updateTitle); Show(updateBg); Show(updateScroll); Show(updateCloseAll); Show(versionText)
+        Animate(updateTitle); Animate(updateBg); Animate(updateScroll); Animate(updateCloseAll); Animate(versionText)
+        updateClose:SetText("×"); updateClose:SetBackgroundColor({1, 0, 0, 0.8})
+        UIHelper.showToast("What's New: Save TP + Back TP + Boost FPS!")
+    end
+end)
+
+updateCloseAll:registerEvent(GUIEvent.Click, function()
+    Hide(updateTitle); Hide(updateBg); Hide(updateScroll); Hide(updateCloseAll); Hide(updateClose); Hide(versionText)
+end)
+
+local WhatsNew = {"Save TP", "Back TP", "Boost FPS", "Cannon", "JetPack"}
+local function addUpdItem(Text)
+    local StaticText = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+    StaticText:SetHorizontalAlignment(HorizontalAlignment.Center)
+    StaticText:SetTextHorzAlign(HorizontalAlignment.Center)
+    StaticText:SetTextVertAlign(VerticalAlignment.Center)
+    StaticText:SetHeight({0, 50}); StaticText:SetWidth({0, 500})
+    StaticText:SetXPosition({0, 0})
+    StaticText:SetBordered(true); StaticText:SetText(Text)
+    StaticText:SetTouchable(true); Show(StaticText)
+    StaticText:SetBackgroundColor({0, 0, 0, 0.2})
+    updateScroll:AddItem(StaticText)
+end
+for i, Text in pairs(WhatsNew) do addUpdItem(Text) end
+Panel = GUIManager:getWindowByName("GMMain-Open")
+Panel:SetXPosition({0, 410}); Panel:SetYPosition({0, 100})
+
+Background = GUIManager:createGUIWindow(GUIType.Layout, tostring(math.random(1, 999e9)))
+Background:SetHorizontalAlignment(HorizontalAlignment.Center)
+Background:SetVerticalAlignment(VerticalAlignment.Center)
+Background:SetHeight({0, 5000}); Background:SetWidth({0, 7000})
+Background:SetYPosition({0, 0}); Background:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(Background)
+Background:SetTouchable(true); Background:SetVisible(false); Background:SetLevel(0.1)
+Background:SetBackgroundColor({0, 0, 0, 0.7})
+CreditText = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+CreditText:SetHorizontalAlignment(HorizontalAlignment.Left)
+CreditText:SetVerticalAlignment(VerticalAlignment.Top)
+CreditText:SetYPosition({0, 60}); CreditText:SetXPosition({0, 70})
+GUISystem.Instance():GetRootWindow():AddChildWindow(CreditText)
+CreditText:SetLevel(0); CreditText:SetBordered(true)
+CreditText:SetText(""); CreditText:SetTouchable(true); CreditText:SetVisible(false)
+
+local hue_credit = 0
+local function UpdateCreditTextColor()
+    hue_credit = (hue_credit + 0.5) % 360
+    local r, g, b = interpolateColor(hue_credit)
+    CreditText:SetTextColor({r, g, b, 1.7})
+end
+LuaTimer:scheduleTimer(UpdateCreditTextColor, 10, -1)
+
+local randomTexts = {
+    " By : TYMAH OFFICIAL - YouTube ",
+    " Subscribe to TYMAH OFFICIAL! ",
+    " Best 1s by TYMAH ",
+    " TYMAH — #1 in BedWars ",
+    " Follow me on YouTube! "
+}
+
+CreditScreen = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+CreditScreen:SetHorizontalAlignment(HorizontalAlignment.Left)
+CreditScreen:SetVerticalAlignment(VerticalAlignment.Top)
+CreditScreen:SetYPosition({0, 110}); CreditScreen:SetXPosition({0, 450})
+GUISystem.Instance():GetRootWindow():AddChildWindow(CreditScreen)
+CreditScreen:SetLevel(0); CreditScreen:SetBordered(true)
+CreditScreen:SetText("                              Credits : TYMAH OFFICIAL [2.127.1] [beta - 1.0]")
+CreditScreen:SetBackgroundColor({0, 0, 0, 1}); CreditScreen:SetWidth({0, 700}); CreditScreen:SetHeight({0, 28})
+CreditScreen:SetVisible(true)
+
+local hue_screen = 0
+local function UpdateCreditScreenColor()
+    hue_screen = (hue_screen + 0.5) % 360
+    local r, g, b = interpolateColor(hue_screen)
+    CreditScreen:SetTextColor({r, g, b, 1.7})
+end
+LuaTimer:scheduleTimer(UpdateCreditScreenColor, 10, -1)
+local function addItem(name, index, func, scale)
+    local itemRow = 6; local horizontalSpacing = 160; local verticalSpacing = 50
+    local startX = 250; local startY = 100
+    local row = math.floor((index - 1) / itemRow); local col = (index - 1) % itemRow
+    local positionX = startX + (col * horizontalSpacing); local positionY = startY + (row * verticalSpacing)
+    local Button = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+    Button:SetHorizontalAlignment(HorizontalAlignment.Left); Button:SetVerticalAlignment(VerticalAlignment.Top)
+    Button:SetTextHorzAlign(HorizontalAlignment.Center); Button:SetTextVertAlign(VerticalAlignment.Center)
+    Button:SetHeight({0, 40}); Button:SetWidth({0, 155})
+    Button:SetYPosition({0, positionY}); Button:SetXPosition({0, positionX})
+    Button:registerEvent(GUIEvent.Click, func)
+    GUISystem.Instance():GetRootWindow():AddChildWindow(Button)
+    Button:SetLevel(0); Button:SetBordered(true); Button:SetText(name); Button:SetTouchable(true); Button:SetVisible(false)
+    Button:SetTextScale(scale or 1); Button:SetBackgroundColor({0, 0, 0, 0.8})
+
+    local hue = 0
+    local function UpdateColor()
+        hue = (hue + 0.5) % 360
+        local r, g, b = interpolateColor(hue)
+        Button:SetTextColor({r, g, b, 0.6})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 50, -1)
+    return Button
+end
+local hackList = {}
+function Gmpanel.saveTP()
+    local player = PlayerManager:getClientPlayer()
+    if player and player.Player then
+        savedPositions.saveTP = player.Player:getPosition()
+        UIHelper.showToast("^00FF00Позиция сохранена! (F1)")
+        playSound("random.orb", 1.0)
+    end
+end
+function Gmpanel.backTP()
+    if savedPositions.saveTP then
+        local player = PlayerManager:getClientPlayer()
+        if player and player.Player then
+            player.Player:setPosition(savedPositions.saveTP)
+            UIHelper.showToast("^00FF00Телепорт назад! (F2)")
+            playSound("random.orb", 1.0)
+        end
+    else
+        UIHelper.showToast("^FF0000Нет сохранённой позиции!")
+        playSound("random.click", 0.8)
+    end
+end
+
+
+GMHelper.boostFPSActive = false
+function Gmpanel.enableBoostFPS()
+   
+    ClientHelper.putIntPrefs("GraphicsQuality", 0)
+    ClientHelper.putBoolPrefs("EnableParticles", false)
+    ClientHelper.putBoolPrefs("EnableWeather", false)
+    ClientHelper.putBoolPrefs("EnableShadows", false)
+    ClientHelper.putIntPrefs("RenderDistance", 4)
+    ClientHelper.putBoolPrefs("SmoothLighting", false)
+    ClientHelper.putBoolPrefs("FancyGraphics", false)
+    
+    
+    for blockId = 1, 1000 do
+        local block = BlockManager.getBlockById(blockId)
+        if block then
+            block:setLightValue(0, 0, 0)
+        end
+    end
+    
+    UIHelper.showToast("^00FF00Boost FPS: Включено")
+end
+
+function Gmpanel.disableBoostFPS()
+    -- Восстановление стандартных настроек
+    ClientHelper.putIntPrefs("GraphicsQuality", 2)
+    ClientHelper.putBoolPrefs("EnableParticles", true)
+    ClientHelper.putBoolPrefs("EnableWeather", true)
+    ClientHelper.putBoolPrefs("EnableShadows", true)
+    ClientHelper.putIntPrefs("RenderDistance", 8)
+    ClientHelper.putBoolPrefs("SmoothLighting", true)
+    ClientHelper.putBoolPrefs("FancyGraphics", true)
+    
+    UIHelper.showToast("^FF0000Boost FPS: Выключено")
+end
+
+-- Cannon
+GMHelper.CannonBtn = function(self, text)
+    local canon = GUIManager:getWindowByName("Main-Cannon")
+    self.cannonActive = not (self.cannonActive or false)
+    
+    if text then
+        text:SetBackgroundColor(self.cannonActive and {0, 0, 255, 255} or {0, 0, 0, 0.8})
+    end
+    
+    if self.cannonActive then
+        canon:SetVisible(true)
+        local scale = 0.5
+        canon:SetScale(VectorUtil.newVector3(scale, scale, scale))
+        
+        self.scaleTimer = LuaTimer:scheduleTicker(function()
+            if scale <= 1 then scale = scale + 0.05 else scale = scale - 0.0125 end
+            canon:SetScale(VectorUtil.newVector3(scale, scale, scale))
+        end, 1, 15)
+        
+        canon:registerEvent(GUIEvent.ButtonClick, function()
+            local clientPlayer = PlayerManager:getClientPlayer()
+            if clientPlayer then
+                local pitch = clientPlayer.Player:getPitch()
+                local yaw = clientPlayer.Player:getYaw()
+                local pitchRad = pitch * math.pi / 180
+                local yawRad = yaw * -math.pi / 180
+                local x = math.cos(pitchRad) * math.sin(yawRad) * 3
+                local y = -math.sin(pitchRad) * 4
+                local z = math.cos(pitchRad) * math.cos(yawRad) * 3
+                local newPos = VectorUtil.newVector3(x, y, z)
+                clientPlayer.Player:setVelocity(newPos)
+                SoundUtil.playSound(313)
+            end
+        end)
+        UIHelper.showToast("^00FF00Cannon: Enabled")
+    else
+        canon:SetVisible(false)
+        if self.scaleTimer then
+            LuaTimer:cancel(self.scaleTimer)
+            self.scaleTimer = nil
+        end
+        UIHelper.showToast("^FF0000Cannon: Disabled")
+    end
+end
+
+Hack1 = addItem("Unlimited Jump", 1, function() toggleHack(Hack1, "Unlimited Jump", Gmpanel.enableInfJump, Gmpanel.disableInfJump) end, 0.9); table.insert(hackList, Hack1)
+Hack2 = addItem("DevFly", 2, function() Gmpanel.DevFly() end); table.insert(hackList, Hack2)
+Hack3 = addItem("Speed", 3, function() toggleHack(Hack3, "Speed", Gmpanel.enableSpeed, Gmpanel.disableSpeed) end); table.insert(hackList, Hack3)
+Hack4 = addItem("FastBreak", 4, function() toggleHack(Hack4, "FastBreak", Gmpanel.enableFastBreak, Gmpanel.disableFastBreak) end); table.insert(hackList, Hack4)
+Hack5 = addItem("Kill - Aura", 5, function() toggleHack(Hack5, "KillAura", Gmpanel.enableKillAura, Gmpanel.disableKillAura, "mob.ghast.fireball", "mob.ghast.scream") end); table.insert(hackList, Hack5)
+Hack6 = addItem("NoFall", 6, function() toggleHack(Hack6, "NoFall", Gmpanel.enableNoFall, Gmpanel.disableNoFall) end); table.insert(hackList, Hack6)
+Hack7 = addItem("Blink", 7, function() toggleHack(Hack7, "Blink", Gmpanel.enableBlink, Gmpanel.disableBlink) end); table.insert(hackList, Hack7)
+Hack8 = addItem("Scaffold", 8, function() toggleHack(Hack8, "Scaffold", Gmpanel.enableScaffold, Gmpanel.disableScaffold) end); table.insert(hackList, Hack8)
+Hack9 = addItem("AttackCD", 9, function() toggleHack(Hack9, "AttackCD", Gmpanel.enableNoDelay, Gmpanel.disableNoDelay) end); table.insert(hackList, Hack9)
+Hack10 = addItem("HitBox", 10, function() toggleHack(Hack10, "HitBox", Gmpanel.enableHitbox, Gmpanel.disableHitbox) end); table.insert(hackList, Hack10)
+Hack11 = addItem("AirSpeed", 11, function() toggleHack(Hack11, "AirSpeed", Gmpanel.enableAirSpeed, Gmpanel.disableAirSpeed) end); table.insert(hackList, Hack11)
+Hack12 = addItem("Aimbot", 12, function() toggleHack(Hack12, "Aimbot", Gmpanel.enableAimBot, Gmpanel.disableAimBot) end); table.insert(hackList, Hack12)
+Hack13 = addItem("HighJump", 13, function() toggleHack(Hack13, "HighJump", Gmpanel.enableHighJump, Gmpanel.disableHighJump) end); table.insert(hackList, Hack13)
+Hack14 = addItem("Auto-Clicker", 14, function() toggleHack(Hack14, "AutoClicker", Gmpanel.enableAutoClick, Gmpanel.disableAutoClick) end, 0.9); table.insert(hackList, Hack14)
+Hack15 = addItem("Boost FPS", 15, function() toggleHack(Hack15, "Boost FPS", Gmpanel.enableBoostFPS, Gmpanel.disableBoostFPS) end, 0.9); table.insert(hackList, Hack15)
+Hack16 = addItem("AntiKnockBack", 16, function() toggleHack(Hack16, "AntiKnockBack", Gmpanel.enableAntiKnockback, Gmpanel.disableAntiKnockback) end, 0.9); table.insert(hackList, Hack16)
+Hack17 = addItem("Anti-Void", 17, function() toggleHack(Hack17, "AntiVoid", Gmpanel.enableAntiVoid, Gmpanel.disableAntiVoid) end); table.insert(hackList, Hack17)
+Hack18 = addItem("Fov 1x", 18, function() toggleHack(Hack18, "Fov 1x", function() Blockman.Instance().m_gameSettings:setFovSetting(1) end, function() Blockman.Instance().m_gameSettings:setFovSetting(0.8) end) end); table.insert(hackList, Hack18)
+Hack19 = addItem("Fov 2x", 19, function() toggleHack(Hack19, "Fov 2x", function() Blockman.Instance().m_gameSettings:setFovSetting(2) end, function() Blockman.Instance().m_gameSettings:setFovSetting(0.8) end) end); table.insert(hackList, Hack19)
+Hack20 = addItem("Fov 3x", 20, function() toggleHack(Hack20, "Fov 3x", function() Blockman.Instance().m_gameSettings:setFovSetting(3) end, function() Blockman.Instance().m_gameSettings:setFovSetting(0.8) end) end); table.insert(hackList, Hack20)
+Hack21 = addItem("SpawnCar", 21, function() toggleHack(Hack21, "SpawnCar", function() local pos = PlayerManager:getClientPlayer():getPosition(); local yaw = PlayerManager:getClientPlayer():getYaw(); Blockman.Instance():getWorld():addVehicle(pos, "2", yaw); UIHelper.showToast("^FFFFFFМашина заспавнена!") end, function() end, "random.pop", "random.click") end); table.insert(hackList, Hack21)
+Hack22 = addItem("All-BigPlayers", 22, function() toggleHack(Hack22, "All-BigPlayers", function() for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player:setScale(5) end end end, function() for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player:setScale(1) end end end) end); table.insert(hackList, Hack22)
+Hack23 = addItem("SpawnNpc", 23, function() toggleHack(Hack23, "SpawnNpc", function() local pos = PlayerManager:getClientPlayer():getPosition(); local yaw = PlayerManager:getClientPlayer():getYaw(); EngineWorld:addActorNpc(pos, yaw, "Merchant.Actor", function() end); UIHelper.showToast("^FFFFFFNPC заспавнен!") end, function() end, "random.pop", "random.click") end); table.insert(hackList, Hack23)
+Hack24 = addItem("TurnAll", 24, function() toggleHack(Hack24, "TurnAll", function() activeTimers.turnAll = LuaTimer:scheduleTimer(function() for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player.m_rotateSpeed = 999 end end end, 100, -1) end, function() if activeTimers.turnAll then LuaTimer:cancel(activeTimers.turnAll); activeTimers.turnAll = nil end for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player.m_rotateSpeed = nil end end end) end); table.insert(hackList, Hack24)
+Hack25 = addItem("NoClip", 25, function() toggleHack(Hack25, "NoClip", function() local p = PlayerManager:getClientPlayer().Player; if p then p:setNoClip(true); p:setFly(true) end end, function() local p = PlayerManager:getClientPlayer().Player; if p then p:setNoClip(false); p:setFly(false) end end) end); table.insert(hackList, Hack25)
+Hack26 = addItem("Rainbow-Wings", 26, function() toggleHack(Hack26, "Rainbow-Wings", function() local p = PlayerManager:getClientPlayer().Player; p.m_outLooksChanged = true; p.m_wingId = 27; p.m_crownId = 5; p.m_glassesId = 15; p.m_topsID = 0; p.m_pantsID = 0; p.m_shoesID = 0; p.m_faceID = 0; p.m_scarfId = 0; p.m_hairID = 0; p.m_hatID = 0; p.m_tailId = 0; p:setShowName("&$[eeee00ff-ffffffff-aaffff-ff00ffff]$$&") end, function() local p = PlayerManager:getClientPlayer().Player; p.m_outLooksChanged = true; p.m_wingId = 0; p.m_crownId = 0; p.m_glassesId = 0; p:setShowName("") end) end); table.insert(hackList, Hack26)
+Hack27 = addItem("Cannon", 27, function() Gmpanel:CannonBtn(Hack27) end); table.insert(hackList, Hack27)
+Hack28 = addItem("Save TP", 28, function() Gmpanel.saveTP() end); table.insert(hackList, Hack28)
+Hack29 = addItem("Back TP", 29, function() Gmpanel.backTP() end); table.insert(hackList, Hack29)
+
+GMHelper.jetpackActive = false
+GMHelper.jetpackButton = nil
+GMHelper.jetpackTimer = nil
+
+GMHelper.toggleJetPack = function(self, menuBtn)
+    self.jetpackActive = not self.jetpackActive
+
+    if self.jetpackActive then
+        menuBtn:SetBackgroundColor({0, 255, 0, 255})
+        UIHelper.showToast("^00FF00JetPack: Включён")
+        playSound("random.orb", 1.0)
+
+        if not self.jetpackButton then
+            self.jetpackButton = GUIManager:createGUIWindow(GUIType.Button, "JetPackBtn_" .. tostring(math.random(1,999999)))
+            self.jetpackButton:SetHorizontalAlignment(HorizontalAlignment.Center)
+            self.jetpackButton:SetVerticalAlignment(VerticalAlignment.Bottom)
+            self.jetpackButton:SetHeight({0, 60}); self.jetpackButton:SetWidth({0, 180})
+            self.jetpackButton:SetYPosition({0, -560}); self.jetpackButton:SetXPosition({0, -550})
+            self.jetpackButton:SetLevel(10)
+            self.jetpackButton:SetBackgroundColor({0, 0, 0, 0.6})
+            self.jetpackButton:SetTextColor({0, 1, 0, 0.6})
+            self.jetpackButton:SetText("JetPack [ON]")
+            self.jetpackButton:registerEvent(GUIEvent.ButtonClick, function()
+                GMHelper:toggleJetPackFromButton()
+            end)
+            GUISystem.Instance():GetRootWindow():AddChildWindow(self.jetpackButton)
+        else
+            self.jetpackButton:SetVisible(true)
+            self.jetpackButton:SetText("JetPack [ON]")
+            self.jetpackButton:SetTextColor({0, 1, 0, 0.6})
+        end
+
+        if self.jetpackTimer then LuaTimer:cancel(self.jetpackTimer) end
+        self.jetpackTimer = LuaTimer:scheduleTimer(function()
+            local player = PlayerManager:getClientPlayer()
+            if not player or not player.Player then return end
+            local yaw = player.Player:getYaw()
+            local pitch = player.Player:getPitch()
+            local yawRad = math.rad(yaw)
+            local pitchRad = math.rad(pitch)
+            local speed = 2.1
+            local x = -speed * math.cos(pitchRad) * math.sin(yawRad)
+            local y = -speed * math.sin(pitchRad)
+            local z = speed * math.cos(pitchRad) * math.cos(yawRad)
+            player.Player:setVelocity(VectorUtil.newVector3(x, y, z))
+        end, 15, -1)
+
+    else
+        menuBtn:SetBackgroundColor({0, 0, 0, 0.8})
+        UIHelper.showToast("^FF0000JetPack: Выключен")
+        playSound("random.click", 0.8)
+
+        if self.jetpackTimer then
+            LuaTimer:cancel(self.jetpackTimer)
+            self.jetpackTimer = nil
+        end
+
+        if self.jetpackButton then
+            self.jetpackButton:SetVisible(false)
+        end
+    end
+end
+
+GMHelper.toggleJetPackFromButton = function(self)
+    self.jetpackActive = not self.jetpackActive
+
+    if self.jetpackActive then
+        if self.jetpackButton then
+            self.jetpackButton:SetText("JetPack [ON]")
+            self.jetpackButton:SetTextColor({0, 1, 0, 0.6})
+        end
+        UIHelper.showToast("^00FF00JetPack: Включён")
+
+        if self.jetpackTimer then LuaTimer:cancel(self.jetpackTimer) end
+        self.jetpackTimer = LuaTimer:scheduleTimer(function()
+            local player = PlayerManager:getClientPlayer()
+            if not player or not player.Player then return end
+            local yaw = player.Player:getYaw()
+            local pitch = player.Player:getPitch()
+            local yawRad = math.rad(yaw)
+            local pitchRad = math.rad(pitch)
+            local speed = 2.1
+            local x = -speed * math.cos(pitchRad) * math.sin(yawRad)
+            local y = -speed * math.sin(pitchRad)
+            local z = speed * math.cos(pitchRad) * math.cos(yawRad)
+            player.Player:setVelocity(VectorUtil.newVector3(x, y, z))
+        end, 15, -1)
+
+    else
+        if self.jetpackButton then
+            self.jetpackButton:SetText("JetPack [OFF]")
+            self.jetpackButton:SetTextColor({1, 0, 0, 0.6})
+        end
+        UIHelper.showToast("^FF0000JetPack: Выключен")
+
+        if self.jetpackTimer then
+            LuaTimer:cancel(self.jetpackTimer)
+            self.jetpackTimer = nil
+        end
+    end
+
+    for _, hackBtn in pairs(hackList) do
+        if hackBtn:GetText() == "JetPack" then
+            hackBtn:SetBackgroundColor(self.jetpackActive and {0, 255, 0, 255} or {0, 0, 0, 0.8})
+            break
+        end
+    end
+end
+
+Hack30 = addItem("JetPack", 30, function() Gmpanel:toggleJetPack(Hack30) end); table.insert(hackList, Hack30)
+
+-- === ВКЛАДКИ ===
+local function addTab(name, index, TabFunction)
+    local verticalSpacing = 51; local startY = 100
+    local positionY = startY + ((index - 1) * verticalSpacing)
+    local Button = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+    Button:SetHorizontalAlignment(HorizontalAlignment.Left); Button:SetVerticalAlignment(VerticalAlignment.Top)
+    Button:SetTextHorzAlign(HorizontalAlignment.Center); Button:SetTextVertAlign(VerticalAlignment.Center)
+    Button:SetHeight({0, 46}); Button:SetWidth({0, 159})
+    Button:SetYPosition({0, positionY}); Button:SetXPosition({0, 45})
+    Button:registerEvent(GUIEvent.Click, TabFunction)
+    GUISystem.Instance():GetRootWindow():AddChildWindow(Button)
+    Button:SetLevel(0); Button:SetBordered(true); Button:SetText(name); Button:SetTouchable(true); Button:SetVisible(false)
+    Button:SetBackgroundColor({0, 0, 0, 0.8})
+
+    local hue = 0
+    local function UpdateColor()
+        hue = (hue + 0.5) % 360
+        local r, g, b = interpolateColor(hue)
+        Button:SetTextColor({r, g, b, 0.6})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 10, -1)
+    return Button
+end
+
+function ShowHackItem() for _, v in pairs(hackList) do Show(v) end end
+function HideHackItem() for _, v in pairs(hackList) do Hide(v) end end
+function HideItem() HideHackItem() end
+
+local tabs = {}
+Tab1 = addTab("Hack", 1, function() 
+    for _, t in pairs(tabs) do t:SetBackgroundColor({0, 0, 0, 0.8}) end
+    Tab1:SetBackgroundColor({0, 100, 0, 255})
+    HideItem(); ShowHackItem()
+end); table.insert(tabs, Tab1)
+
+-- === Кнопки открытия/закрытия ===
+OpenButton = GUIManager:createGUIWindow(GUIType.Button, tostring(math.random(1, 999e9)))
+OpenButton:SetHorizontalAlignment(HorizontalAlignment.Center); OpenButton:SetVerticalAlignment(VerticalAlignment.Top)
+OpenButton:SetHeight({0, 50}); OpenButton:SetWidth({0, 50})
+OpenButton:SetYPosition({0, 70}); OpenButton:SetXPosition({0, 0})
+OpenButton:SetNormalImage("set:gui_inventory_icon.json image:icon_bookrack")
+OpenButton:SetPushedImage("set:gui_inventory_icon.json image:icon_bookrack")
+GUISystem.Instance():GetRootWindow():AddChildWindow(OpenButton)
+OpenButton:SetLevel(0); OpenButton:SetTouchable(true); OpenButton:SetVisible(true)
+
+CloseButton = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+CloseButton:SetHorizontalAlignment(HorizontalAlignment.Right); CloseButton:SetVerticalAlignment(VerticalAlignment.Top)
+CloseButton:SetTextHorzAlign(HorizontalAlignment.Center); CloseButton:SetTextVertAlign(VerticalAlignment.Center)
+CloseButton:SetHeight({0, 40}); CloseButton:SetWidth({0, 40})
+CloseButton:SetYPosition({0, 60}); CloseButton:SetXPosition({0, -20})
+CloseButton:registerEvent(GUIEvent.Click, function()
+    HideAll(); Show(OpenButton); Show(CreditScreen); Animate(CreditScreen); Animate(OpenButton)
+end)
+GUISystem.Instance():GetRootWindow():AddChildWindow(CloseButton)
+CloseButton:SetText("×"); CloseButton:SetLevel(0); CloseButton:SetTouchable(true); CloseButton:SetVisible(false)
+CloseButton:SetTextScale(1.5); CloseButton:SetBordered(true); CloseButton:SetBackgroundColor(Color.RED)
+
+function HideAll()
+    Hide(Background); Hide(CloseButton); HideItem()
+    for i=1,#tabs do Hide(tabs[i]) end
+    Hide(CreditText)
+end
+
+function ShowAll()
+    Show(Background); Show(CloseButton); ShowHackItem()
+    for i=1,#tabs do Show(tabs[i]); Animate(tabs[i]) end
+    Show(CreditText); Animate(CreditText)
+    local randomText = randomTexts[math.random(#randomTexts)]
+    CreditText:SetText(randomText)
+end
+
+OpenButton:registerEvent(GUIEvent.ButtonClick, function()
+    ShowAll(); Hide(OpenButton); Hide(CreditScreen)
+    Tab1:SetBackgroundColor({0, 100, 0, 255})
+    Animate(Background); Animate(CloseButton)
+    for _, v in pairs(hackList) do Animate(v) end
+end)
+
+-- === Hotkeys для Save TP и Back TP ===
+LuaTimer:scheduleTimer(function()
+    if InputHelper and InputHelper.isKeyDown then
+        if InputHelper.isKeyDown(59) then -- F1
+            Gmpanel.saveTP()
+        elseif InputHelper.isKeyDown(60) then -- F2
+            Gmpanel.backTP()
+        end
+    end
+end, 100, -1)
+
+function Gmpanel.DevFly()
+    local player = PlayerManager:getClientPlayer().Player
+    local moveDir = VectorUtil.newVector3(0.0, 1.35, 0.0)
+    player:setAllowFlying(true)
+    player:setFlying(true)     
+    player:moveEntity(moveDir)
+end
+
+function Gmpanel.enableInfJump()
+    ClientHelper.putBoolPrefs("EnableDoubleJumps", true)
+end
+function Gmpanel.disableInfJump()
+    ClientHelper.putBoolPrefs("EnableDoubleJumps", false)
+end
+
+function Gmpanel.enableSpeed()
+    PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(15000)
+end
+function Gmpanel.disableSpeed()
+    PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(15)
+end
+
+function Gmpanel.enableFastBreak()
+    for blockId = 1, 40000 do
+        local block = BlockManager.getBlockById(blockId)
+        if block then block:setHardness(0) end
+    end
+end
+function Gmpanel.disableFastBreak()
+    for blockId = 1, 40000 do
+        local block = BlockManager.getBlockById(blockId)
+        if block then block:setHardness(4) end
+    end
+end
+
+function Gmpanel.enableKillAura()
+    activeTimers["KillAura"] = LuaTimer:scheduleTimer(function()
+        local player = PlayerManager:getClientPlayer()
+        local nearestPlayer
+        local minDis = math.huge
+        for _, c_player in pairs(PlayerManager:getPlayers()) do
+            if c_player ~= player then
+                local distance = MathUtil:distanceSquare3d(c_player:getPosition(), player:getPosition())
+                if distance < 35 and distance < minDis then
+                    minDis = distance
+                    nearestPlayer = c_player
+                end
+            end
+        end
+        if nearestPlayer then
+            CGame.Instance():handleTouchClick(800, 360)
+        end
+    end, 100, -1)
+end
+function Gmpanel.disableKillAura() end
+
+function Gmpanel.enableNoFall()
+    ClientHelper.putIntPrefs("SprintLimitCheck", 0)
+end
+function Gmpanel.disableNoFall()
+    ClientHelper.putIntPrefs("SprintLimitCheck", 1)
+end
+
+function Gmpanel.enableBlink()
+    ClientHelper.putBoolPrefs("SyncClientPositionToServer", true)
+end
+function Gmpanel.disableBlink()
+    ClientHelper.putBoolPrefs("SyncClientPositionToServer", false)
+end
+
+function Gmpanel.enableScaffold()
+    activeTimers["Scaffold"] = LuaTimer:scheduleTimer(function()
+        local pos = PlayerManager:getClientPlayer():getPosition()
+        local function place(x, y, z) EngineWorld:setBlock(VectorUtil.newVector3(x, y, z), 5) end
+        place(pos.x, pos.y - 2, pos.z)
+        place(pos.x, pos.y - 2, pos.z + 1)
+        place(pos.x, pos.y - 2, pos.z - 1)
+        place(pos.x + 1, pos.y - 2, pos.z)
+        place(pos.x - 1, pos.y - 2, pos.z)
+    end, 100, -1)
+end
+function Gmpanel.disableScaffold()
+    ClientHelper.putIntPrefs("SprintLimitCheck", 0)
+end
+
+function Gmpanel.enableNoDelay()
+    activeTimers["AttackCD"] = LuaTimer:scheduleTimer(function()
+        local player = PlayerManager:getClientPlayer().Player
+        player:setIntProperty("bedWarAttackCD", 0)
+        ClientHelper.putBoolPrefs("banClickCD", true)
+    end, 100, -1)
+end
+function Gmpanel.disableNoDelay()
+    PlayerManager:getClientPlayer().Player:setIntProperty("bedWarAttackCD", nil)
+    ClientHelper.putBoolPrefs("banClickCD", false)
+end
+
+function Gmpanel.enableHitbox()
+    for _, player in pairs(PlayerManager:getPlayers()) do
+        if player ~= PlayerManager:getClientPlayer() then
+            local e = player.Player
+            e.height = 2.5; e.width = 3; e.length = 3
+        end
+    end
+end
+function Gmpanel.disableHitbox()
+    for _, player in pairs(PlayerManager:getPlayers()) do
+        if player ~= PlayerManager:getClientPlayer() then
+            local e = player.Player
+            e.height = 1.8; e.width = 0.6; e.length = 0.6
+        end
+    end
+end
+
+function Gmpanel.enableAirSpeed()
+    CEvents.PlayerJumpEvent:registerCallBack(function()
+        PlayerManager:getClientPlayer().Player:setGlide(true)
+    end)
+end
+function Gmpanel.disableAirSpeed()
+    CEvents.PlayerJumpEvent:unregisterAll()
+end
+
+function Gmpanel.enableAimBot()
+    activeTimers["Aimbot"] = LuaTimer:scheduleTimer(function()
+        local me = PlayerManager:getClientPlayer()
+        if not me then return end
+        local myPos = me.Player:getPosition()
+        local myTeamId = me.Player:getTeamId()
+        local closestPlayer, closestDistance = nil, math.huge
+        for _, player in pairs(PlayerManager:getPlayers()) do
+            if player ~= me and player.Player and player.Player:getTeamId() ~= myTeamId then
+                local dist = MathUtil:distanceSquare2d(player:getPosition(), myPos)
+                if dist < closestDistance then
+                    closestDistance = dist
+                    closestPlayer = player
+                end
+            end
+        end
+        if closestPlayer and closestDistance < 60 then
+            local camera = SceneManager.Instance():getMainCamera()
+            local pos = camera:getPosition()
+            local dir = VectorUtil.sub3(closestPlayer:getPosition(), pos)
+            local yaw = math.atan2(dir.x, dir.z) / math.pi * -180
+            local calculate = math.sqrt(dir.x * dir.x + dir.z * dir.z)
+            local pitch = -math.atan2(dir.y + 1.5, calculate) / math.pi * 180
+            me.Player.rotationYaw = yaw
+            me.Player.rotationPitch = pitch
+            CGame.Instance():handleTouchClick(800, 360)
+        end
+    end, 50, -1)
+end
+function Gmpanel.disableAimBot() end
+
+function Gmpanel.enableHighJump()
+    PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 1)
+end
+function Gmpanel.disableHighJump()
+    PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 0.4)
+end
+
+function Gmpanel.enableAutoClick()
+    activeTimers["AutoClicker"] = LuaTimer:scheduleTimer(function()
+        CGame.Instance():handleTouchClick(800, 360)
+    end, 100, -1)
+end
+function Gmpanel.disableAutoClick() end
+
+function Gmpanel.enableAntiKnockback()
+    states.lastHealth = nil
+    states.lastPosition = nil
+    activeTimers["AntiKnockBack"] = LuaTimer:scheduleTimer(function()
+        local me = PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local currentHealth = me.Player:getHealth()
+        local currentPosition = me.Player:getPosition()
+        if states.lastHealth and currentHealth < states.lastHealth and states.lastPosition then
+            me.Player:setPosition(states.lastPosition)
+        end
+        states.lastHealth = currentHealth
+        states.lastPosition = currentPosition
+    end, 10, -1)
+end
+function Gmpanel.disableAntiKnockback()
+    states.lastHealth = nil
+    states.lastPosition = nil
+end
+
+function Gmpanel.enableAntiVoid()
+    states.antiVoidPos = nil
+    activeTimers["AntiVoid"] = LuaTimer:scheduleTimer(function()
+        local player = PlayerManager:getClientPlayer().Player
+        if player.onGround then
+            states.antiVoidPos = player:getPosition()
+        elseif states.antiVoidPos and player:getPosition().y <= 1 then
+            player.noClip = true
+            player:setPosition(VectorUtil.newVector3(states.antiVoidPos.x, states.antiVoidPos.y + 2, states.antiVoidPos.z))
+            LuaTimer:schedule(function() player.noClip = false end, 100)
+        end
+    end, 10, -1)
+end
+function Gmpanel.disableAntiVoid()
+    states.antiVoidPos = nil
+end

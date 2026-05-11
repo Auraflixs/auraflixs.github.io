@@ -1,0 +1,592 @@
+local GUIRoot = GUISystem.Instance():GetRootWindow()
+local GUIRoot = GUISystem.Instance():GetRootWindow()
+
+local mainButton = GUIManager:createGUIWindow(GUIType.Button, "MainHackButton")
+mainButton:SetText("")
+mainButton:SetWidth({0, 60})
+mainButton:SetHeight({0, 60})
+mainButton:SetXPosition({0, 1120})
+mainButton:SetYPosition({0, 220})
+mainButton:SetProperty("NormalImage", "set:gui_inventory_icon.json image:icon_bookrack")
+mainButton:SetProperty("PushedImage", "set:gui_inventory_icon.json image:icon_bookrack")
+mainButton:SetBackgroundColor({0, 0, 0, 0})
+mainButton:SetLevel(10)
+GUIRoot:AddChildWindow(mainButton)
+
+local activeTimers = {}
+local activeCallbacks = {}
+
+local function cancelTimersForFeature(featureName)
+    if activeTimers[featureName] then 
+        for _, timerId in ipairs(activeTimers[featureName]) do 
+            LuaTimer:cancel(timerId) 
+        end 
+        activeTimers[featureName] = nil 
+    end
+end
+
+local function cancelCallbacksForFeature(featureName)
+    if activeCallbacks[featureName] then 
+        for event, callbackId in pairs(activeCallbacks[featureName]) do 
+            Listener.unregisterCallBack(event, callbackId) 
+        end 
+        activeCallbacks[featureName] = nil 
+    end
+end
+
+local function registerTimer(featureName, timerId)
+    if not activeTimers[featureName] then 
+        activeTimers[featureName] = {} 
+    end 
+    table.insert(activeTimers[featureName], timerId)
+end
+
+local function registerCallback(featureName, event, callbackId)
+    if not activeCallbacks[featureName] then 
+        activeCallbacks[featureName] = {} 
+    end 
+    activeCallbacks[featureName][event] = callbackId
+end
+
+local function isPlayerInAir()
+    local player = PlayerManager:getClientPlayer()
+    if not player or not player.Player then return false end
+    
+    local pos = player.Player:getPosition()
+    local footY = pos.y - 1.7
+    
+    for i = 0, 1 do
+        local checkPos = VectorUtil.newVector3(pos.x, footY - i, pos.z)
+        if EngineWorld:getBlockId(checkPos) ~= 0 then
+            return false
+        end
+    end
+    
+    return true
+end
+
+local hackFeatures = {
+    {name = "Fly", onFunc = function() 
+        ClientHelper.putBoolPrefs("EnableDoubleJumps", true) 
+        UIHelper.showToast("^00FF00Fly Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("EnableDoubleJumps", false) 
+        UIHelper.showToast("^FF0000Fly Deactivated") 
+    end},
+    
+    {name = "DevFly", onFunc = function() 
+        local player = PlayerManager:getClientPlayer() 
+        player.Player:setAllowFlying(true) 
+        player.Player:setFlying(true) 
+        local pos = player.Player:getPosition()
+        player.Player:setPosition(VectorUtil.newVector3(pos.x, pos.y + 1.20, pos.z))
+        UIHelper.showToast("^00FF00DevFly Activated") 
+    end, offFunc = function() 
+        local player = PlayerManager:getClientPlayer() 
+        player.Player:setAllowFlying(false) 
+        player.Player:setFlying(false) 
+        UIHelper.showToast("^FF0000DevFly Deactivated") 
+    end},
+    
+    {name = "Speed", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(300000) 
+        UIHelper.showToast("^00FF00Speed Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(0) 
+        UIHelper.showToast("^FF0000Speed Deactivated") 
+    end},
+    
+    {name = "HighJump", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 1) 
+        UIHelper.showToast("^00FF00HighJump Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 0.4) 
+        UIHelper.showToast("^FF0000HighJump Deactivated") 
+    end},
+    
+    {name = "NoFall", onFunc = function() 
+        ClientHelper.putIntPrefs("SprintLimitCheck", 1) 
+        UIHelper.showToast("^00FF00NoFall Activated") 
+    end, offFunc = function() 
+        ClientHelper.putIntPrefs("SprintLimitCheck", 0) 
+        UIHelper.showToast("^FF0000NoFall Deactivated") 
+    end},
+    
+    {name = "HitBox", onFunc = function() 
+        for _, player in ipairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.height = 10 
+                player.Player.width = 10 
+                player.Player.length = 10 
+            end 
+        end 
+        UIHelper.showToast("^00FF00HitBox Activated") 
+    end, offFunc = function() 
+        for _, player in ipairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.height = 2.0 
+                player.Player.width = 2.0 
+                player.Player.length = 2.0 
+            end 
+        end 
+        UIHelper.showToast("^FF0000HitBox Deactivated") 
+    end},
+    
+    {name = "NoClip", onFunc = function() 
+        PlayerManager:getClientPlayer().Player.noClip = true 
+        UIHelper.showToast("^00FF00NoClip Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player.noClip = false 
+        UIHelper.showToast("^FF0000NoClip Deactivated") 
+    end},
+    
+    {name = "Blink", onFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", false) 
+        UIHelper.showToast("^00FF00Blink Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", true) 
+        UIHelper.showToast("^FF0000Blink Deactivated") 
+    end},
+    
+    {name = "JetPack", onFunc = function() 
+        local timerId = LuaTimer:scheduleTimer(function() 
+            local player = PlayerManager:getClientPlayer().Player 
+            local yaw = math.rad(player:getYaw()) 
+            local pitch = math.rad(player:getPitch()) 
+            local moveX = -math.sin(yaw) * math.cos(pitch) * 0.5 
+            local moveY = -math.sin(pitch) * 0.5 
+            local moveZ = math.cos(yaw) * math.cos(pitch) * 0.5 
+            player:setVelocity(VectorUtil.newVector3(moveX, moveY, moveZ)) 
+        end, 50, -1) 
+        registerTimer("JetPack", timerId) 
+        UIHelper.showToast("^00FF00JetPack Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("JetPack") 
+        UIHelper.showToast("^FF0000JetPack Deactivated") 
+    end},
+    
+    {name = "TpKill", onFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", false) 
+        registerTimer("TpKill", LuaTimer:scheduleTimer(function() 
+            CGame.Instance():handleTouchClick(800, 360) 
+        end, 0.1, -1)) 
+        for _, player in pairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.width = 5 
+                player.Player.height = 6 
+                player.Player.length = 5 
+            end 
+        end 
+        registerTimer("TpKill", LuaTimer:scheduleTimer(function() 
+            local clientPlayer = PlayerManager:getClientPlayer() 
+            if not clientPlayer then return end 
+            local myPos = clientPlayer.Player:getPosition() 
+            local nearestPlayer = nil 
+            local minDistance = math.huge 
+            for _, player in pairs(PlayerManager:getPlayers()) do 
+                if player ~= clientPlayer then 
+                    local playerPos = player.Player:getPosition() 
+                    local distance = MathUtil:distanceSquare2d(playerPos, myPos) 
+                    if distance < minDistance and distance <= 360000 then 
+                        minDistance = distance 
+                        nearestPlayer = player 
+                    end 
+                end 
+            end 
+            if nearestPlayer then 
+                local targetPos = nearestPlayer.Player:getPosition() 
+                clientPlayer.Player:setPosition(VectorUtil.newVector3(
+                    targetPos.x, 
+                    targetPos.y + 2.6, 
+                    targetPos.z 
+                )) 
+            end 
+        end, 16, -1)) 
+        UIHelper.showToast("^00FF00TpKill Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", true) 
+        cancelTimersForFeature("TpKill") 
+        for _, player in pairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.width = 2.0 
+                player.Player.height = 2.0 
+                player.Player.length = 2.0 
+            end 
+        end 
+        UIHelper.showToast("^FF0000TpKill Deactivated") 
+    end},
+    
+    {name = "NoDelay", onFunc = function() 
+        ClientHelper.putBoolPrefs("banClickCD", true) 
+        ClientHelper.putBoolPrefs("RemoveClickCD", true) 
+        ClientHelper.putIntPrefs("HurtProtectTime", 0) 
+        ClientHelper.putBoolPrefs("BanEntityHitCD", true) 
+        ClientHelper.putIntPrefs("ClickSceneCD", 0) 
+        PlayerManager:getClientPlayer().Player:setIntProperty("bedWarAttackCD", 0) 
+        UIHelper.showToast("^00FF00NoDelay Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("banClickCD", false) 
+        ClientHelper.putBoolPrefs("RemoveClickCD", false) 
+        ClientHelper.putIntPrefs("HurtProtectTime", 5) 
+        ClientHelper.putBoolPrefs("BanEntityHitCD", false) 
+        ClientHelper.putIntPrefs("ClickSceneCD", 5) 
+        PlayerManager:getClientPlayer().Player:setIntProperty("bedWarAttackCD", 5) 
+        UIHelper.showToast("^FF0000NoDelay Deactivated") 
+    end},
+    
+    {name = "Scaffold", onFunc = function() 
+        registerTimer("Scaffold", LuaTimer:scheduleTimer(function() 
+            local pos = PlayerManager:getClientPlayer():getPosition() 
+            EngineWorld:setBlock(VectorUtil.newVector3(pos.x, pos.y - 2, pos.z), 7) 
+        end, 0.2, -1)) 
+        UIHelper.showToast("^00FF00Scaffold Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("Scaffold") 
+        UIHelper.showToast("^FF0000Scaffold Deactivated") 
+    end},
+    
+    {name = "TargetAura", onFunc = function() 
+        registerTimer("TargetAura", LuaTimer:scheduleTimer(function() 
+            local client = PlayerManager:getClientPlayer() 
+            if not client then return end 
+            local target = nil 
+            local minDist = 6 * 6 
+            for _, player in pairs(PlayerManager:getPlayers()) do 
+                if player ~= client then 
+                    local pos = player.Player:getPosition() 
+                    local dx = pos.x - client.Player:getPosition().x 
+                    local dz = pos.z - client.Player:getPosition().z 
+                    local dist = dx*dx + dz*dz 
+                    if dist < minDist then 
+                        minDist = dist 
+                        target = player 
+                    end 
+                end 
+            end 
+            if target then 
+                local targetPos = target.Player:getPosition() 
+                local client = PlayerManager:getClientPlayer().Player 
+                local offsetX = (math.random() * 6) - 3 
+                local offsetZ = (math.random() * 6) - 3 
+                client:setPosition(VectorUtil.newVector3(
+                    targetPos.x + offsetX, 
+                    targetPos.y + 3, 
+                    targetPos.z + offsetZ 
+                )) 
+            end 
+        end, 88, -1)) 
+        UIHelper.showToast("^00FF00TargetAura Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("TargetAura") 
+        UIHelper.showToast("^FF0000TargetAura Deactivated") 
+    end},
+    
+    {name = "ItemThief", onFunc = function() 
+        registerTimer("ItemThief", LuaTimer:scheduleTimer(function() 
+            local clientPlayer = PlayerManager:getClientPlayer() 
+            if not clientPlayer then return end 
+            local playerPos = clientPlayer.Player:getPosition() 
+            local closestItem = nil 
+            local minDistance = math.huge 
+            for _, entityData in pairs(EntityCache:getAllEntity()) do 
+                if entityData.type == EntityType.Item then 
+                    local itemPos = entityData.entity:getPosition() 
+                    local dx = playerPos.x - itemPos.x 
+                    local dz = playerPos.z - itemPos.z 
+                    local distance = math.sqrt(dx*dx + dz*dz) 
+                    if distance < minDistance then 
+                        minDistance = distance 
+                        closestItem = entityData.entity 
+                    end 
+                end 
+            end 
+            if closestItem and minDistance > 1 then 
+                local itemPos = closestItem:getPosition() 
+                clientPlayer.Player:setPosition(VectorUtil.newVector3(
+                    itemPos.x, 
+                    itemPos.y + 2.2, 
+                    itemPos.z 
+                )) 
+            end 
+        end, 60, -1)) 
+        UIHelper.showToast("^00FF00ItemThief Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("ItemThief") 
+        UIHelper.showToast("^FF0000ItemThief Deactivated") 
+    end},
+    
+    {name = "AutoClick", onFunc = function() 
+        registerTimer("AutoClick", LuaTimer:scheduleTimer(function() 
+            CGame.Instance():handleTouchClick(800, 360) 
+        end, 18, -1)) 
+        UIHelper.showToast("^00FF00AutoClick Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("AutoClick") 
+        UIHelper.showToast("^FF0000AutoClick Deactivated") 
+    end},
+    
+    {name = "AimBot", onFunc = function() 
+        registerTimer("AimBot", LuaTimer:scheduleTimer(function() 
+            local client = PlayerManager:getClientPlayer() 
+            if not client then return end 
+            local myPos = client.Player:getPosition() 
+            local closest, dist = nil, 36 
+            for _, enemy in pairs(PlayerManager:getPlayers()) do 
+                if enemy ~= client then 
+                    local ePos = enemy:getPosition() 
+                    local d = (ePos.x-myPos.x)^2 + (ePos.y-myPos.y)^2 + (ePos.z-myPos.z)^2 
+                    if d < dist then 
+                        closest, dist = enemy, d 
+                    end 
+                end 
+            end 
+            if closest and dist <= 36 then 
+                local dir = VectorUtil.sub3(closest:getPosition(), myPos) 
+                dir.y = dir.y + 1 
+                client.Player.rotationYaw = math.atan2(dir.x, dir.z) * (-180/math.pi) 
+                client.Player.rotationPitch = -math.atan2(dir.y, math.sqrt(dir.x^2 + dir.z^2)) * (180/math.pi) 
+            end 
+        end, 12, -1)) 
+        UIHelper.showToast("^00FF00AimBot Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("AimBot") 
+        UIHelper.showToast("^FF0000AimBot Deactivated") 
+    end},
+    
+    {name = "KillAura", onFunc = function() 
+        registerTimer("KillAura", LuaTimer:scheduleTimer(function() 
+            local clientPlayer = PlayerManager:getClientPlayer() 
+            if not clientPlayer then return end 
+            local myPos = clientPlayer.Player:getPosition() 
+            local shouldAutoClick = false 
+            for _, playerData in pairs(PlayerManager:getPlayers()) do 
+                if playerData ~= clientPlayer then 
+                    local player = playerData.Player 
+                    local playerPos = player:getPosition() 
+                    local distance = math.sqrt(
+                        (playerPos.x - myPos.x)^2 + 
+                        (playerPos.y - myPos.y)^2 + 
+                        (playerPos.z - myPos.z)^2 
+                    ) 
+                    if distance <= 6 then 
+                        player.width = 6 
+                        player.height = 6 
+                        player.length = 6 
+                        shouldAutoClick = true 
+                    else 
+                        player.width = 2.0 
+                        player.height = 2.0 
+                        player.length = 2.0 
+                    end 
+                end 
+            end 
+            if shouldAutoClick then 
+                CGame.Instance():handleTouchClick(800, 360) 
+            end 
+        end, 50, -1)) 
+        UIHelper.showToast("^00FF00KillAura Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("KillAura") 
+        for _, player in pairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.width = 2.0 
+                player.Player.height = 2.0 
+                player.Player.length = 2.0 
+            end 
+        end 
+        UIHelper.showToast("^FF0000KillAura Deactivated") 
+    end},
+    
+    {name = "Fov", onFunc = function() 
+        Blockman.Instance().m_gameSettings:setFovSetting(2.2) 
+        UIHelper.showToast("^00FF00Fov Activated") 
+    end, offFunc = function() 
+        Blockman.Instance().m_gameSettings:setFovSetting(1.0) 
+        UIHelper.showToast("^FF0000Fov Deactivated") 
+    end},
+    
+    {name = "Tracer", onFunc = function() 
+        registerTimer("Tracer", LuaTimer:scheduleTimer(function() 
+            local myPlayer = PlayerManager:getClientPlayer() 
+            if not myPlayer then return end 
+            myPlayer.Player:deleteAllGuideArrow() 
+            for _, player in pairs(PlayerManager:getPlayers()) do 
+                if player ~= myPlayer then 
+                    local pos = player.Player:getPosition() 
+                    pos.y = pos.y + 1 
+                    myPlayer.Player:addGuideArrow(pos) 
+                end 
+            end 
+        end, 260, -1)) 
+        UIHelper.showToast("^00FF00Tracer Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("Tracer") 
+        PlayerManager:getClientPlayer().Player:deleteAllGuideArrow()
+        UIHelper.showToast("^FF0000Tracer Deactivated") 
+    end},
+    
+    {name = "Parachute", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:startParachute() 
+        UIHelper.showToast("^00FF00Parachute Activated") 
+    end, offFunc = function() 
+        UIHelper.showToast("^FF0000Parachute Will Deactivate On Landing") 
+    end},
+    
+    {name = "Reach", onFunc = function() 
+        ClientHelper.putFloatPrefs("BlockReachDistance", 999) 
+        ClientHelper.putFloatPrefs("EntityReachDistance", 999) 
+        UIHelper.showToast("^00FF00Reach Activated") 
+    end, offFunc = function() 
+        ClientHelper.putFloatPrefs("BlockReachDistance", 6.5) 
+        ClientHelper.putFloatPrefs("EntityReachDistance", 6.5) 
+        UIHelper.showToast("^FF0000Reach Deactivated") 
+    end},
+    
+    {name = "Skate", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setBoolProperty("DisableUpdateAnimState", true) 
+        UIHelper.showToast("^00FF00Skate Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player:setBoolProperty("DisableUpdateAnimState", false) 
+        UIHelper.showToast("^FF0000Skate Deactivated") 
+    end},
+    
+    {name = "TpClick", onFunc = function() 
+        registerCallback("TpClick", CEvents.ClickToBlockEvent, Listener.registerCallBack(CEvents.ClickToBlockEvent, function(event) 
+            PlayerManager:getClientPlayer().Player:setPosition(VectorUtil.newVector3(event.x, event.y + 3, event.z)) 
+        end)) 
+        UIHelper.showToast("^00FF00TpClick Activated") 
+    end, offFunc = function() 
+        cancelCallbacksForFeature("TpClick") 
+        UIHelper.showToast("^FF0000TpClick Deactivated") 
+    end},
+    
+    {name = "WingFly", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 1) 
+        
+        local timerId = LuaTimer:scheduleTimer(function()
+            local player = PlayerManager:getClientPlayer()
+            if not player or not player.Player then return end
+            
+            local inAir = isPlayerInAir()
+            if inAir then
+                if player.Player.m_wingId ~= 27 then
+                    player.Player.m_outLooksChanged = true
+                    player.Player.m_wingId = 27
+                    player.Player.m_isGlide = true
+                    player.Player.m_glideMoveAddition = 0.8
+                    player.Player.m_glideDropResistance = 0.5
+                    SoundUtil.playSound(325)
+                end
+            else
+                if player.Player.m_wingId == 27 then
+                    player.Player.m_outLooksChanged = true
+                    player.Player.m_wingId = 0
+                    player.Player.m_isGlide = false
+                end
+            end
+        end, 50, -1)
+        
+        registerTimer("WingFly", timerId)
+        UIHelper.showToast("^00FF00WingFly Activated")
+    end,
+    offFunc = function() 
+        cancelTimersForFeature("WingFly")
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 0.4)
+        
+        local player = PlayerManager:getClientPlayer()
+        if player and player.Player and player.Player.m_wingId == 27 then
+            player.Player.m_outLooksChanged = true
+            player.Player.m_wingId = 0
+            player.Player.m_isGlide = false
+        end
+        
+        UIHelper.showToast("^FF0000WingFly Deactivated")
+    end}
+}
+
+local activeHacks = {}
+local hackButtons = {}
+local buttonWidth = 150
+local buttonHeight = 45
+local startX = 20
+local startY = 80
+local columns = 4
+local horizontalSpacing = 10
+local verticalSpacing = 10
+
+for i, feature in ipairs(hackFeatures) do
+    local col = (i-1) % columns
+    local row = math.floor((i-1) / columns)
+    local btn = GUIManager:createGUIWindow(GUIType.Button, "HackBtn" .. feature.name)
+    btn:SetText("^FF0000" .. feature.name .. ":OFF")
+    btn:SetWidth({0, buttonWidth})
+    btn:SetHeight({0, buttonHeight})
+    btn:SetXPosition({0, startX + col * (buttonWidth + horizontalSpacing)})
+    btn:SetYPosition({0, startY + row * (buttonHeight + verticalSpacing)})
+    btn:SetBackgroundColor({0, 0, 0, 0.8})
+    btn:SetVisible(false)
+    btn:SetLevel(9)
+    GUIRoot:AddChildWindow(btn)
+    activeHacks[feature.name] = false
+    hackButtons[feature.name] = btn
+    btn:registerEvent(GUIEvent.ButtonClick, function()
+        activeHacks[feature.name] = not activeHacks[feature.name]
+        if activeHacks[feature.name] then
+            btn:SetText("^00FF00" .. feature.name .. ":ON")
+            feature.onFunc()
+        else
+            btn:SetText("^FF0000" .. feature.name .. ":OFF")
+            feature.offFunc()
+        end
+    end)
+end
+
+local buttonsVisible = false
+mainButton:registerEvent(GUIEvent.ButtonClick, function()
+    buttonsVisible = not buttonsVisible
+    for _, btn in pairs(hackButtons) do 
+        btn:SetVisible(buttonsVisible) 
+    end
+end)
+
+local colors = {
+    "^FF0000", "^FF4000", "^FF8000", "^FFBF00", 
+    "^FFFF00", "^BFFF00", "^80FF00", "^00FF80", 
+    "^00FFFF", "^0080FF", "^0000FF", "^8000FF", 
+    "^BF00FF", "^FF00FF"
+}
+local currentColorIndex = 1
+LuaTimer:scheduleTimer(function()
+    MsgSender.sendBottomTips(5, colors[currentColorIndex] .. "RunCode GuiHack ReleaseV0.1")
+    currentColorIndex = currentColorIndex + 1
+    if currentColorIndex > #colors then 
+        currentColorIndex = 1 
+    end
+end, 120, -1)
+
+local function unloadAll()
+    for featureName, isActive in pairs(activeHacks) do
+        if isActive then
+            for _, feature in ipairs(hackFeatures) do
+                if feature.name == featureName then
+                    feature.offFunc()
+                    break
+                end
+            end
+        end
+    end
+    
+    if mainButton then
+        GUIRoot:RemoveChildWindow(mainButton)
+        GUIManager:destroyWindow(mainButton)
+    end
+    
+    for _, btn in pairs(hackButtons) do
+        GUIRoot:RemoveChildWindow(btn)
+        GUIManager:destroyWindow(btn)
+    end
+end
+
+return {
+    unload = unloadAll
+}
