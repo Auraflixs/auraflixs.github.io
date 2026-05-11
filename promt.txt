@@ -1,0 +1,2499 @@
+edita este código, las funciones del código anterior el primero donde sale el aimback etc, lo agregaras a este código,  ya no quiero las funciones al inicio de la pantalla (dónde estaba el speed, hitbox, jump fly2) ahora quiero q estén dentro del menú de este código q te daré, lo único q está al inicio será el killmenu, solo saldrá cuando active uno de estas funciones del menú, o sea hasta a active alguno de estas funciones q te diré saldrá el killmenu y las funciones, el aimback (será el AutoPlay para q le cambes el nombre) los demás aimbacks quitalos, también al activar el aimbot saldrá en el killaura e igual el tragetAura, antigravity (cambia el nombre a gravity) y el fijar altura será un botón de "+" al lado de el botón de gravity pero consevando el tamaño q los dos juntos hacían uno, o sea el más solo sería un botón algo pequeño un 40-35% de lo q era el botón del antigravity, también agrrega killaura de 450ms a 500ms, también agrega el tpclick, agrega también otro  targetAura pero modificado q se llame BackAura hará lo mismo q el targetAura pero con la diferencia q solo podrá teletransportar en la parte de atrás del enemigo, o sea en su espada, al lado de el pero en la parte de atrás, nunca en un lugar fijo, pero también nunca frente de el, así como hace el aimback, q nunca se pone frente el enemigo si no q busca los lugares donde el enemigo no me ve, al autoplay (aimback) edita el actualmente tiene alcance Lara detectar al enemigo con distancia infinita, quiero q ahora solo tenga hasta 8 bloques.
+Esas funciones q te dije, cuando más activé desde el menú, tienen q salir en el kill menú, y para q dejen de salir en el kill menú, debo desactivae cada función desde el menú, y así sucesivamente, en el menú q está en este código q te daré, ahí es donde estarán todos, pero todos las funciones (es el q al tocar el icono q está arriba del nombre "Credits : TYMAH OFFICIAL [2.127.1] [beta - 1.0]" abre un menú, entonces ese es el menú donde habrán todas las funciones, ahí estará, el killaura, aimback, y esos a te dije antes, también agregaras, pov x2 q tiene mi código q te di antes, el hitbox, el speed, HighJump de mi código, el flyv2 (cambia el nombre por *parapente*) en el parapente (flyv2) me toca activar y desactivar y volverlo activar para q se active bien areglalo, también agregas las funciones q por defecto están activas en mi código como el Anti-Void, Antiknock Back, Tracer, q salgan los botones de ellos en el menú pero ya activados, ya si quiero también los puedo desactivar, pero q ya vengan activos, también agrega la función de AttackCD y FastBreak y Rainbow-Wing (cambia el nombre por (RainboW) también agrega el JetPack pero con la velocidad de 1.05, creo q está a 3, pero yo lo quiero al 1.05 también agrega el KillAuraV2 es el killaura q sale en el código donde está el TargetAura, el killaura normal déjalo como el q tiene el autoplay (aimback) integrado, también agrega al función itemThief, Skate, y el autoclicker q pusiste en x coordenadas, pon el botón al lado donde irá el killmenu a la izquierda, el botón de killaura menú ponlo donde estaban antes en mi código arriba donde estaba el botón de jump, ahí pondrás el killmenu y al lado del Killmenu el botón del autoclicker y q el botón sea uno pequeño y q se llame anti-not y también edita q al único donde sale "Credits: TYMAH OFFICIAL [2.127.1] [beta - 1.0]" en vez que diga eso quiero q diga "Naho & Xebas [3.14.2]  [Release 1.0.4]" y también quita todo lo q diga o tanga q ver con  "TYMAH OFFICIAL" por "Naho & Xebas" también quita el menú q sale al inicio q dice "What's New In Panel vl.0?" no quiero q salga eso, aquí está el código para q lo edites y agregues todas esas funciones y me lo das completo 
+
+
+local pos = VectorUtil.newVector3
+function Animate(Gui)
+    local scale = 0.5
+    Gui:SetScale(pos(scale, scale, scale))    
+    local timer = LuaTimer:scheduleTicker(function()
+        if scale <= 1 then scale = scale + 0.1 else scale = scale - 0.025 end
+        Gui:SetScale(pos(scale, scale, scale))    
+    end, 1, 10)
+end
+
+function Hide(G) G:SetVisible(false) end
+function Show(G) G:SetVisible(true) end
+
+red = "^FF0000"
+green = "^00FF00"
+cyan = "^00FFFF"
+Gmpanel = GMHelper
+
+local states = {}
+local activeTimers = {}
+local savedPositions = {}
+
+-- === Звуки ===
+function playSound(name, pitch)
+    local player = PlayerManager:getClientPlayer()
+    if player and player.Player then
+        player.Player:playSound(name or "random.click", pitch or 1.0)
+    end
+end
+function toggleHack(btn, hackName, enableFunc, disableFunc, soundOn, soundOff)
+    states[hackName] = not states[hackName]
+    if states[hackName] then
+        btn:SetBackgroundColor({0, 255, 0, 255})
+        UIHelper.showToast(green .. hackName .. ": Включено")
+        playSound(soundOn or "random.orb", 1.0)
+        if enableFunc then enableFunc() end
+    else
+        btn:SetBackgroundColor({0, 0, 0, 0.8})
+        UIHelper.showToast(red .. hackName .. ": Выключено")
+        playSound(soundOff or "random.click", 0.8)
+        if disableFunc then disableFunc() end
+        if activeTimers[hackName] then
+            LuaTimer:cancel(activeTimers[hackName])
+            activeTimers[hackName] = nil
+        end
+    end
+end
+
+
+updateBg = GUIManager:createGUIWindow(GUIType.Layout, tostring(math.random(1, 999e9)))
+updateBg:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateBg:SetVerticalAlignment(VerticalAlignment.Center)
+updateBg:SetHeight({0, 400}); updateBg:SetWidth({0, 500})
+updateBg:SetYPosition({0, 0}); updateBg:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateBg)
+updateBg:SetTouchable(true); Show(updateBg); updateBg:SetLevel(1)
+updateBg:SetBackgroundColor({0, 0, 0, 0.8})
+
+updateScroll = GUIManager:createGUIWindow(GUIType.List, tostring(math.random(1, 999e9)))
+updateScroll:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateScroll:SetVerticalAlignment(VerticalAlignment.Center)
+updateScroll:SetHeight({0, 300}); updateScroll:SetWidth({0, 450})
+updateScroll:SetYPosition({0, 0}); updateScroll:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateScroll)
+updateScroll:SetTouchable(true); updateScroll:SetLevel(1); Show(updateScroll)
+updateScroll:SetMoveAble(true); updateScroll:SetBackgroundColor({0, 0, 0, 0.1})
+
+updateTitle = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+updateTitle:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateTitle:SetVerticalAlignment(VerticalAlignment.Center)
+updateTitle:SetTextHorzAlign(HorizontalAlignment.Center)
+updateTitle:SetTextVertAlign(VerticalAlignment.Center)
+updateTitle:SetHeight({0, 50}); updateTitle:SetWidth({0, 500})
+updateTitle:SetYPosition({0, -170}); updateTitle:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateTitle)
+updateTitle:SetTouchable(true); Show(updateTitle); updateTitle:SetLevel(1)
+updateTitle:SetBordered(true); updateTitle:SetBackgroundColor({0, 0, 0, 0.1})
+
+local hue = 0
+local function interpolateColor(hue)
+    local r, g, b = 0, 0, 0
+    if hue < 60 then r, g, b = 1, hue / 60, 0
+    elseif hue < 120 then r, g, b = (120 - hue) / 60, 1, 0
+    elseif hue < 180 then r, g, b = 0, 1, (hue - 120) / 60
+    elseif hue < 240 then r, g, b = 0, (240 - hue) / 60, 1
+    elseif hue < 300 then r, g, b = (hue - 240) / 60, 0, 1
+    else r, g, b = 1, 0, (360 - hue) / 60 end
+    return r, g, b
+end
+
+function Title()
+    local function UpdateColor()
+        updateTitle:SetText("What's New In Panel v1.0 ?")
+        hue = (hue + 0.5) % 360
+        local r, g, b = interpolateColor(hue)
+        updateTitle:SetTextColor({r, g, b, 2.7})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 50, -1)
+end
+Title()
+
+updateClose = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+updateClose:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateClose:SetVerticalAlignment(VerticalAlignment.Center)
+updateClose:SetTextHorzAlign(HorizontalAlignment.Center)
+updateClose:SetTextVertAlign(VerticalAlignment.Center)
+updateClose:SetHeight({0, 50}); updateClose:SetWidth({0, 50})
+updateClose:SetYPosition({0, -175}); updateClose:SetXPosition({0, 225})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateClose)
+updateClose:SetTouchable(true); Show(updateClose); updateClose:SetLevel(1)
+updateClose:SetBordered(true); updateClose:SetText("×"); updateClose:SetTextScale(1.5)
+updateClose:SetBackgroundColor({1, 0, 0, 0.8})
+
+updateCloseAll = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+updateCloseAll:SetHorizontalAlignment(HorizontalAlignment.Center)
+updateCloseAll:SetVerticalAlignment(VerticalAlignment.Center)
+updateCloseAll:SetTextHorzAlign(HorizontalAlignment.Center)
+updateCloseAll:SetTextVertAlign(VerticalAlignment.Center)
+updateCloseAll:SetHeight({0, 50}); updateCloseAll:SetWidth({0, 100})
+updateCloseAll:SetYPosition({0, -270}); updateCloseAll:SetXPosition({0, 250})
+GUISystem.Instance():GetRootWindow():AddChildWindow(updateCloseAll)
+updateCloseAll:SetTouchable(true); Show(updateCloseAll); updateCloseAll:SetLevel(1)
+updateCloseAll:SetBordered(true); updateCloseAll:SetText("Close"); updateCloseAll:SetTextScale(1)
+updateCloseAll:SetBackgroundColor({1, 0, 0, 0.8})
+
+local versionText = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+versionText:SetHorizontalAlignment(HorizontalAlignment.Left)
+versionText:SetVerticalAlignment(VerticalAlignment.Center)
+versionText:SetTextHorzAlign(HorizontalAlignment.Left)
+versionText:SetTextVertAlign(VerticalAlignment.Center)
+versionText:SetHeight({0, 30}); versionText:SetWidth({0, 500})
+versionText:SetYPosition({0, 130}); versionText:SetXPosition({0, 620})
+GUISystem.Instance():GetRootWindow():AddChildWindow(versionText)
+versionText:SetTouchable(false); Show(versionText); versionText:SetBordered(false)
+versionText:SetText("Credit: TYMAH OFFICIAL"); versionText:SetTextColor({1, 0, 0, 1}); versionText:SetTextScale(1.2)
+versionText:SetLevel(1); versionText:SetBackgroundColor({0, 0, 0, 0})
+
+local hue2 = 0
+local function VersionTextColor()
+    local function UpdateColor()
+        hue2 = (hue2 + 0.5) % 360
+        local r, g, b = interpolateColor(hue2)
+        versionText:SetTextColor({r, g, b, 1.7})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 50, -1)
+end
+VersionTextColor()
+
+updateClose:registerEvent(GUIEvent.Click, function()
+    local isVisible = updateBg:IsVisible()
+    if isVisible then
+        Hide(updateTitle); Hide(updateBg); Hide(updateScroll); Hide(updateCloseAll); Hide(versionText)
+        updateClose:SetBackgroundColor({0, 0, 0, 0.8}); updateClose:SetText("!")
+    else
+        Show(updateTitle); Show(updateBg); Show(updateScroll); Show(updateCloseAll); Show(versionText)
+        Animate(updateTitle); Animate(updateBg); Animate(updateScroll); Animate(updateCloseAll); Animate(versionText)
+        updateClose:SetText("×"); updateClose:SetBackgroundColor({1, 0, 0, 0.8})
+        UIHelper.showToast("What's New: Save TP + Back TP + Boost FPS!")
+    end
+end)
+
+updateCloseAll:registerEvent(GUIEvent.Click, function()
+    Hide(updateTitle); Hide(updateBg); Hide(updateScroll); Hide(updateCloseAll); Hide(updateClose); Hide(versionText)
+end)
+
+local WhatsNew = {"Save TP", "Back TP", "Boost FPS", "Cannon", "JetPack"}
+local function addUpdItem(Text)
+    local StaticText = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+    StaticText:SetHorizontalAlignment(HorizontalAlignment.Center)
+    StaticText:SetTextHorzAlign(HorizontalAlignment.Center)
+    StaticText:SetTextVertAlign(VerticalAlignment.Center)
+    StaticText:SetHeight({0, 50}); StaticText:SetWidth({0, 500})
+    StaticText:SetXPosition({0, 0})
+    StaticText:SetBordered(true); StaticText:SetText(Text)
+    StaticText:SetTouchable(true); Show(StaticText)
+    StaticText:SetBackgroundColor({0, 0, 0, 0.2})
+    updateScroll:AddItem(StaticText)
+end
+for i, Text in pairs(WhatsNew) do addUpdItem(Text) end
+Panel = GUIManager:getWindowByName("GMMain-Open")
+Panel:SetXPosition({0, 410}); Panel:SetYPosition({0, 100})
+
+Background = GUIManager:createGUIWindow(GUIType.Layout, tostring(math.random(1, 999e9)))
+Background:SetHorizontalAlignment(HorizontalAlignment.Center)
+Background:SetVerticalAlignment(VerticalAlignment.Center)
+Background:SetHeight({0, 5000}); Background:SetWidth({0, 7000})
+Background:SetYPosition({0, 0}); Background:SetXPosition({0, 0})
+GUISystem.Instance():GetRootWindow():AddChildWindow(Background)
+Background:SetTouchable(true); Background:SetVisible(false); Background:SetLevel(0.1)
+Background:SetBackgroundColor({0, 0, 0, 0.7})
+CreditText = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+CreditText:SetHorizontalAlignment(HorizontalAlignment.Left)
+CreditText:SetVerticalAlignment(VerticalAlignment.Top)
+CreditText:SetYPosition({0, 60}); CreditText:SetXPosition({0, 70})
+GUISystem.Instance():GetRootWindow():AddChildWindow(CreditText)
+CreditText:SetLevel(0); CreditText:SetBordered(true)
+CreditText:SetText(""); CreditText:SetTouchable(true); CreditText:SetVisible(false)
+
+local hue_credit = 0
+local function UpdateCreditTextColor()
+    hue_credit = (hue_credit + 0.5) % 360
+    local r, g, b = interpolateColor(hue_credit)
+    CreditText:SetTextColor({r, g, b, 1.7})
+end
+LuaTimer:scheduleTimer(UpdateCreditTextColor, 10, -1)
+
+local randomTexts = {,
+    " Best 1s by TYMAH ",
+    " TYMAH — #1 in BedWars ",
+    " Naho Top #1 "
+}
+
+CreditScreen = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+CreditScreen:SetHorizontalAlignment(HorizontalAlignment.Left)
+CreditScreen:SetVerticalAlignment(VerticalAlignment.Top)
+CreditScreen:SetYPosition({0, 110}); CreditScreen:SetXPosition({0, 450})
+GUISystem.Instance():GetRootWindow():AddChildWindow(CreditScreen)
+CreditScreen:SetLevel(0); CreditScreen:SetBordered(true)
+CreditScreen:SetText("                              Credits : TYMAH OFFICIAL [2.127.1] [beta - 1.0]")
+CreditScreen:SetBackgroundColor({0, 0, 0, 1}); CreditScreen:SetWidth({0, 700}); CreditScreen:SetHeight({0, 28})
+CreditScreen:SetVisible(true)
+
+local hue_screen = 0
+local function UpdateCreditScreenColor()
+    hue_screen = (hue_screen + 0.5) % 360
+    local r, g, b = interpolateColor(hue_screen)
+    CreditScreen:SetTextColor({r, g, b, 1.7})
+end
+LuaTimer:scheduleTimer(UpdateCreditScreenColor, 10, -1)
+local function addItem(name, index, func, scale)
+    local itemRow = 6; local horizontalSpacing = 160; local verticalSpacing = 50
+    local startX = 250; local startY = 100
+    local row = math.floor((index - 1) / itemRow); local col = (index - 1) % itemRow
+    local positionX = startX + (col * horizontalSpacing); local positionY = startY + (row * verticalSpacing)
+    local Button = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+    Button:SetHorizontalAlignment(HorizontalAlignment.Left); Button:SetVerticalAlignment(VerticalAlignment.Top)
+    Button:SetTextHorzAlign(HorizontalAlignment.Center); Button:SetTextVertAlign(VerticalAlignment.Center)
+    Button:SetHeight({0, 40}); Button:SetWidth({0, 155})
+    Button:SetYPosition({0, positionY}); Button:SetXPosition({0, positionX})
+    Button:registerEvent(GUIEvent.Click, func)
+    GUISystem.Instance():GetRootWindow():AddChildWindow(Button)
+    Button:SetLevel(0); Button:SetBordered(true); Button:SetText(name); Button:SetTouchable(true); Button:SetVisible(false)
+    Button:SetTextScale(scale or 1); Button:SetBackgroundColor({0, 0, 0, 0.8})
+
+    local hue = 0
+    local function UpdateColor()
+        hue = (hue + 0.5) % 360
+        local r, g, b = interpolateColor(hue)
+        Button:SetTextColor({r, g, b, 0.6})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 50, -1)
+    return Button
+end
+local hackList = {}
+function Gmpanel.saveTP()
+    local player = PlayerManager:getClientPlayer()
+    if player and player.Player then
+        savedPositions.saveTP = player.Player:getPosition()
+        UIHelper.showToast("^00FF00Позиция сохранена! (F1)")
+        playSound("random.orb", 1.0)
+    end
+end
+function Gmpanel.backTP()
+    if savedPositions.saveTP then
+        local player = PlayerManager:getClientPlayer()
+        if player and player.Player then
+            player.Player:setPosition(savedPositions.saveTP)
+            UIHelper.showToast("^00FF00Телепорт назад! (F2)")
+            playSound("random.orb", 1.0)
+        end
+    else
+        UIHelper.showToast("^FF0000Нет сохранённой позиции!")
+        playSound("random.click", 0.8)
+    end
+end
+
+
+GMHelper.boostFPSActive = false
+function Gmpanel.enableBoostFPS()
+   
+    ClientHelper.putIntPrefs("GraphicsQuality", 0)
+    ClientHelper.putBoolPrefs("EnableParticles", false)
+    ClientHelper.putBoolPrefs("EnableWeather", false)
+    ClientHelper.putBoolPrefs("EnableShadows", false)
+    ClientHelper.putIntPrefs("RenderDistance", 4)
+    ClientHelper.putBoolPrefs("SmoothLighting", false)
+    ClientHelper.putBoolPrefs("FancyGraphics", false)
+    
+    
+    for blockId = 1, 1000 do
+        local block = BlockManager.getBlockById(blockId)
+        if block then
+            block:setLightValue(0, 0, 0)
+        end
+    end
+    
+    UIHelper.showToast("^00FF00Boost FPS: Включено")
+end
+
+function Gmpanel.disableBoostFPS()
+    -- Восстановление стандартных настроек
+    ClientHelper.putIntPrefs("GraphicsQuality", 2)
+    ClientHelper.putBoolPrefs("EnableParticles", true)
+    ClientHelper.putBoolPrefs("EnableWeather", true)
+    ClientHelper.putBoolPrefs("EnableShadows", true)
+    ClientHelper.putIntPrefs("RenderDistance", 8)
+    ClientHelper.putBoolPrefs("SmoothLighting", true)
+    ClientHelper.putBoolPrefs("FancyGraphics", true)
+    
+    UIHelper.showToast("^FF0000Boost FPS: Выключено")
+end
+
+-- Cannon
+GMHelper.CannonBtn = function(self, text)
+    local canon = GUIManager:getWindowByName("Main-Cannon")
+    self.cannonActive = not (self.cannonActive or false)
+    
+    if text then
+        text:SetBackgroundColor(self.cannonActive and {0, 0, 255, 255} or {0, 0, 0, 0.8})
+    end
+    
+    if self.cannonActive then
+        canon:SetVisible(true)
+        local scale = 0.5
+        canon:SetScale(VectorUtil.newVector3(scale, scale, scale))
+        
+        self.scaleTimer = LuaTimer:scheduleTicker(function()
+            if scale <= 1 then scale = scale + 0.05 else scale = scale - 0.0125 end
+            canon:SetScale(VectorUtil.newVector3(scale, scale, scale))
+        end, 1, 15)
+        
+        canon:registerEvent(GUIEvent.ButtonClick, function()
+            local clientPlayer = PlayerManager:getClientPlayer()
+            if clientPlayer then
+                local pitch = clientPlayer.Player:getPitch()
+                local yaw = clientPlayer.Player:getYaw()
+                local pitchRad = pitch * math.pi / 180
+                local yawRad = yaw * -math.pi / 180
+                local x = math.cos(pitchRad) * math.sin(yawRad) * 3
+                local y = -math.sin(pitchRad) * 4
+                local z = math.cos(pitchRad) * math.cos(yawRad) * 3
+                local newPos = VectorUtil.newVector3(x, y, z)
+                clientPlayer.Player:setVelocity(newPos)
+                SoundUtil.playSound(313)
+            end
+        end)
+        UIHelper.showToast("^00FF00Cannon: Enabled")
+    else
+        canon:SetVisible(false)
+        if self.scaleTimer then
+            LuaTimer:cancel(self.scaleTimer)
+            self.scaleTimer = nil
+        end
+        UIHelper.showToast("^FF0000Cannon: Disabled")
+    end
+end
+
+Hack1 = addItem("Unlimited Jump", 1, function() toggleHack(Hack1, "Unlimited Jump", Gmpanel.enableInfJump, Gmpanel.disableInfJump) end, 0.9); table.insert(hackList, Hack1)
+Hack2 = addItem("DevFly", 2, function() Gmpanel.DevFly() end); table.insert(hackList, Hack2)
+Hack3 = addItem("Speed", 3, function() toggleHack(Hack3, "Speed", Gmpanel.enableSpeed, Gmpanel.disableSpeed) end); table.insert(hackList, Hack3)
+Hack4 = addItem("FastBreak", 4, function() toggleHack(Hack4, "FastBreak", Gmpanel.enableFastBreak, Gmpanel.disableFastBreak) end); table.insert(hackList, Hack4)
+Hack5 = addItem("Kill - Aura", 5, function() toggleHack(Hack5, "KillAura", Gmpanel.enableKillAura, Gmpanel.disableKillAura, "mob.ghast.fireball", "mob.ghast.scream") end); table.insert(hackList, Hack5)
+Hack6 = addItem("NoFall", 6, function() toggleHack(Hack6, "NoFall", Gmpanel.enableNoFall, Gmpanel.disableNoFall) end); table.insert(hackList, Hack6)
+Hack7 = addItem("Blink", 7, function() toggleHack(Hack7, "Blink", Gmpanel.enableBlink, Gmpanel.disableBlink) end); table.insert(hackList, Hack7)
+Hack8 = addItem("Scaffold", 8, function() toggleHack(Hack8, "Scaffold", Gmpanel.enableScaffold, Gmpanel.disableScaffold) end); table.insert(hackList, Hack8)
+Hack9 = addItem("AttackCD", 9, function() toggleHack(Hack9, "AttackCD", Gmpanel.enableNoDelay, Gmpanel.disableNoDelay) end); table.insert(hackList, Hack9)
+Hack10 = addItem("HitBox", 10, function() toggleHack(Hack10, "HitBox", Gmpanel.enableHitbox, Gmpanel.disableHitbox) end); table.insert(hackList, Hack10)
+Hack11 = addItem("AirSpeed", 11, function() toggleHack(Hack11, "AirSpeed", Gmpanel.enableAirSpeed, Gmpanel.disableAirSpeed) end); table.insert(hackList, Hack11)
+Hack12 = addItem("Aimbot", 12, function() toggleHack(Hack12, "Aimbot", Gmpanel.enableAimBot, Gmpanel.disableAimBot) end); table.insert(hackList, Hack12)
+Hack13 = addItem("HighJump", 13, function() toggleHack(Hack13, "HighJump", Gmpanel.enableHighJump, Gmpanel.disableHighJump) end); table.insert(hackList, Hack13)
+Hack14 = addItem("Auto-Clicker", 14, function() toggleHack(Hack14, "AutoClicker", Gmpanel.enableAutoClick, Gmpanel.disableAutoClick) end, 0.9); table.insert(hackList, Hack14)
+Hack15 = addItem("Boost FPS", 15, function() toggleHack(Hack15, "Boost FPS", Gmpanel.enableBoostFPS, Gmpanel.disableBoostFPS) end, 0.9); table.insert(hackList, Hack15)
+Hack16 = addItem("AntiKnockBack", 16, function() toggleHack(Hack16, "AntiKnockBack", Gmpanel.enableAntiKnockback, Gmpanel.disableAntiKnockback) end, 0.9); table.insert(hackList, Hack16)
+Hack17 = addItem("Anti-Void", 17, function() toggleHack(Hack17, "AntiVoid", Gmpanel.enableAntiVoid, Gmpanel.disableAntiVoid) end); table.insert(hackList, Hack17)
+Hack18 = addItem("Fov 1x", 18, function() toggleHack(Hack18, "Fov 1x", function() Blockman.Instance().m_gameSettings:setFovSetting(1) end, function() Blockman.Instance().m_gameSettings:setFovSetting(0.8) end) end); table.insert(hackList, Hack18)
+Hack19 = addItem("Fov 2x", 19, function() toggleHack(Hack19, "Fov 2x", function() Blockman.Instance().m_gameSettings:setFovSetting(2) end, function() Blockman.Instance().m_gameSettings:setFovSetting(0.8) end) end); table.insert(hackList, Hack19)
+Hack20 = addItem("Fov 3x", 20, function() toggleHack(Hack20, "Fov 3x", function() Blockman.Instance().m_gameSettings:setFovSetting(3) end, function() Blockman.Instance().m_gameSettings:setFovSetting(0.8) end) end); table.insert(hackList, Hack20)
+Hack21 = addItem("SpawnCar", 21, function() toggleHack(Hack21, "SpawnCar", function() local pos = PlayerManager:getClientPlayer():getPosition(); local yaw = PlayerManager:getClientPlayer():getYaw(); Blockman.Instance():getWorld():addVehicle(pos, "2", yaw); UIHelper.showToast("^FFFFFFМашина заспавнена!") end, function() end, "random.pop", "random.click") end); table.insert(hackList, Hack21)
+Hack22 = addItem("All-BigPlayers", 22, function() toggleHack(Hack22, "All-BigPlayers", function() for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player:setScale(5) end end end, function() for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player:setScale(1) end end end) end); table.insert(hackList, Hack22)
+Hack23 = addItem("SpawnNpc", 23, function() toggleHack(Hack23, "SpawnNpc", function() local pos = PlayerManager:getClientPlayer():getPosition(); local yaw = PlayerManager:getClientPlayer():getYaw(); EngineWorld:addActorNpc(pos, yaw, "Merchant.Actor", function() end); UIHelper.showToast("^FFFFFFNPC заспавнен!") end, function() end, "random.pop", "random.click") end); table.insert(hackList, Hack23)
+Hack24 = addItem("TurnAll", 24, function() toggleHack(Hack24, "TurnAll", function() activeTimers.turnAll = LuaTimer:scheduleTimer(function() for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player.m_rotateSpeed = 999 end end end, 100, -1) end, function() if activeTimers.turnAll then LuaTimer:cancel(activeTimers.turnAll); activeTimers.turnAll = nil end for _, p in pairs(PlayerManager:getPlayers()) do if p ~= PlayerManager:getClientPlayer() then p.Player.m_rotateSpeed = nil end end end) end); table.insert(hackList, Hack24)
+Hack25 = addItem("NoClip", 25, function() toggleHack(Hack25, "NoClip", function() local p = PlayerManager:getClientPlayer().Player; if p then p:setNoClip(true); p:setFly(true) end end, function() local p = PlayerManager:getClientPlayer().Player; if p then p:setNoClip(false); p:setFly(false) end end) end); table.insert(hackList, Hack25)
+Hack26 = addItem("Rainbow-Wings", 26, function() toggleHack(Hack26, "Rainbow-Wings", function() local p = PlayerManager:getClientPlayer().Player; p.m_outLooksChanged = true; p.m_wingId = 27; p.m_crownId = 5; p.m_glassesId = 15; p.m_topsID = 0; p.m_pantsID = 0; p.m_shoesID = 0; p.m_faceID = 0; p.m_scarfId = 0; p.m_hairID = 0; p.m_hatID = 0; p.m_tailId = 0; p:setShowName("&$[eeee00ff-ffffffff-aaffff-ff00ffff]$$&") end, function() local p = PlayerManager:getClientPlayer().Player; p.m_outLooksChanged = true; p.m_wingId = 0; p.m_crownId = 0; p.m_glassesId = 0; p:setShowName("") end) end); table.insert(hackList, Hack26)
+Hack27 = addItem("Cannon", 27, function() Gmpanel:CannonBtn(Hack27) end); table.insert(hackList, Hack27)
+Hack28 = addItem("Save TP", 28, function() Gmpanel.saveTP() end); table.insert(hackList, Hack28)
+Hack29 = addItem("Back TP", 29, function() Gmpanel.backTP() end); table.insert(hackList, Hack29)
+
+GMHelper.jetpackActive = false
+GMHelper.jetpackButton = nil
+GMHelper.jetpackTimer = nil
+
+GMHelper.toggleJetPack = function(self, menuBtn)
+    self.jetpackActive = not self.jetpackActive
+
+    if self.jetpackActive then
+        menuBtn:SetBackgroundColor({0, 255, 0, 255})
+        UIHelper.showToast("^00FF00JetPack: Включён")
+        playSound("random.orb", 1.0)
+
+        if not self.jetpackButton then
+            self.jetpackButton = GUIManager:createGUIWindow(GUIType.Button, "JetPackBtn_" .. tostring(math.random(1,999999)))
+            self.jetpackButton:SetHorizontalAlignment(HorizontalAlignment.Center)
+            self.jetpackButton:SetVerticalAlignment(VerticalAlignment.Bottom)
+            self.jetpackButton:SetHeight({0, 60}); self.jetpackButton:SetWidth({0, 180})
+            self.jetpackButton:SetYPosition({0, -560}); self.jetpackButton:SetXPosition({0, -550})
+            self.jetpackButton:SetLevel(10)
+            self.jetpackButton:SetBackgroundColor({0, 0, 0, 0.6})
+            self.jetpackButton:SetTextColor({0, 1, 0, 0.6})
+            self.jetpackButton:SetText("JetPack [ON]")
+            self.jetpackButton:registerEvent(GUIEvent.ButtonClick, function()
+                GMHelper:toggleJetPackFromButton()
+            end)
+            GUISystem.Instance():GetRootWindow():AddChildWindow(self.jetpackButton)
+        else
+            self.jetpackButton:SetVisible(true)
+            self.jetpackButton:SetText("JetPack [ON]")
+            self.jetpackButton:SetTextColor({0, 1, 0, 0.6})
+        end
+
+        if self.jetpackTimer then LuaTimer:cancel(self.jetpackTimer) end
+        self.jetpackTimer = LuaTimer:scheduleTimer(function()
+            local player = PlayerManager:getClientPlayer()
+            if not player or not player.Player then return end
+            local yaw = player.Player:getYaw()
+            local pitch = player.Player:getPitch()
+            local yawRad = math.rad(yaw)
+            local pitchRad = math.rad(pitch)
+            local speed = 2.1
+            local x = -speed * math.cos(pitchRad) * math.sin(yawRad)
+            local y = -speed * math.sin(pitchRad)
+            local z = speed * math.cos(pitchRad) * math.cos(yawRad)
+            player.Player:setVelocity(VectorUtil.newVector3(x, y, z))
+        end, 15, -1)
+
+    else
+        menuBtn:SetBackgroundColor({0, 0, 0, 0.8})
+        UIHelper.showToast("^FF0000JetPack: Выключен")
+        playSound("random.click", 0.8)
+
+        if self.jetpackTimer then
+            LuaTimer:cancel(self.jetpackTimer)
+            self.jetpackTimer = nil
+        end
+
+        if self.jetpackButton then
+            self.jetpackButton:SetVisible(false)
+        end
+    end
+end
+
+GMHelper.toggleJetPackFromButton = function(self)
+    self.jetpackActive = not self.jetpackActive
+
+    if self.jetpackActive then
+        if self.jetpackButton then
+            self.jetpackButton:SetText("JetPack [ON]")
+            self.jetpackButton:SetTextColor({0, 1, 0, 0.6})
+        end
+        UIHelper.showToast("^00FF00JetPack: Включён")
+
+        if self.jetpackTimer then LuaTimer:cancel(self.jetpackTimer) end
+        self.jetpackTimer = LuaTimer:scheduleTimer(function()
+            local player = PlayerManager:getClientPlayer()
+            if not player or not player.Player then return end
+            local yaw = player.Player:getYaw()
+            local pitch = player.Player:getPitch()
+            local yawRad = math.rad(yaw)
+            local pitchRad = math.rad(pitch)
+            local speed = 2.1
+            local x = -speed * math.cos(pitchRad) * math.sin(yawRad)
+            local y = -speed * math.sin(pitchRad)
+            local z = speed * math.cos(pitchRad) * math.cos(yawRad)
+            player.Player:setVelocity(VectorUtil.newVector3(x, y, z))
+        end, 15, -1)
+
+    else
+        if self.jetpackButton then
+            self.jetpackButton:SetText("JetPack [OFF]")
+            self.jetpackButton:SetTextColor({1, 0, 0, 0.6})
+        end
+        UIHelper.showToast("^FF0000JetPack: Выключен")
+
+        if self.jetpackTimer then
+            LuaTimer:cancel(self.jetpackTimer)
+            self.jetpackTimer = nil
+        end
+    end
+
+    for _, hackBtn in pairs(hackList) do
+        if hackBtn:GetText() == "JetPack" then
+            hackBtn:SetBackgroundColor(self.jetpackActive and {0, 255, 0, 255} or {0, 0, 0, 0.8})
+            break
+        end
+    end
+end
+
+Hack30 = addItem("JetPack", 30, function() Gmpanel:toggleJetPack(Hack30) end); table.insert(hackList, Hack30)
+
+-- === ВКЛАДКИ ===
+local function addTab(name, index, TabFunction)
+    local verticalSpacing = 51; local startY = 100
+    local positionY = startY + ((index - 1) * verticalSpacing)
+    local Button = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+    Button:SetHorizontalAlignment(HorizontalAlignment.Left); Button:SetVerticalAlignment(VerticalAlignment.Top)
+    Button:SetTextHorzAlign(HorizontalAlignment.Center); Button:SetTextVertAlign(VerticalAlignment.Center)
+    Button:SetHeight({0, 46}); Button:SetWidth({0, 159})
+    Button:SetYPosition({0, positionY}); Button:SetXPosition({0, 45})
+    Button:registerEvent(GUIEvent.Click, TabFunction)
+    GUISystem.Instance():GetRootWindow():AddChildWindow(Button)
+    Button:SetLevel(0); Button:SetBordered(true); Button:SetText(name); Button:SetTouchable(true); Button:SetVisible(false)
+    Button:SetBackgroundColor({0, 0, 0, 0.8})
+
+    local hue = 0
+    local function UpdateColor()
+        hue = (hue + 0.5) % 360
+        local r, g, b = interpolateColor(hue)
+        Button:SetTextColor({r, g, b, 0.6})
+    end
+    LuaTimer:scheduleTimer(UpdateColor, 10, -1)
+    return Button
+end
+
+function ShowHackItem() for _, v in pairs(hackList) do Show(v) end end
+function HideHackItem() for _, v in pairs(hackList) do Hide(v) end end
+function HideItem() HideHackItem() end
+
+local tabs = {}
+Tab1 = addTab("Hack", 1, function() 
+    for _, t in pairs(tabs) do t:SetBackgroundColor({0, 0, 0, 0.8}) end
+    Tab1:SetBackgroundColor({0, 100, 0, 255})
+    HideItem(); ShowHackItem()
+end); table.insert(tabs, Tab1)
+
+-- === Кнопки открытия/закрытия ===
+OpenButton = GUIManager:createGUIWindow(GUIType.Button, tostring(math.random(1, 999e9)))
+OpenButton:SetHorizontalAlignment(HorizontalAlignment.Center); OpenButton:SetVerticalAlignment(VerticalAlignment.Top)
+OpenButton:SetHeight({0, 50}); OpenButton:SetWidth({0, 50})
+OpenButton:SetYPosition({0, 70}); OpenButton:SetXPosition({0, 0})
+OpenButton:SetNormalImage("set:gui_inventory_icon.json image:icon_bookrack")
+OpenButton:SetPushedImage("set:gui_inventory_icon.json image:icon_bookrack")
+GUISystem.Instance():GetRootWindow():AddChildWindow(OpenButton)
+OpenButton:SetLevel(0); OpenButton:SetTouchable(true); OpenButton:SetVisible(true)
+
+CloseButton = GUIManager:createGUIWindow(GUIType.StaticText, tostring(math.random(1, 999e9)))
+CloseButton:SetHorizontalAlignment(HorizontalAlignment.Right); CloseButton:SetVerticalAlignment(VerticalAlignment.Top)
+CloseButton:SetTextHorzAlign(HorizontalAlignment.Center); CloseButton:SetTextVertAlign(VerticalAlignment.Center)
+CloseButton:SetHeight({0, 40}); CloseButton:SetWidth({0, 40})
+CloseButton:SetYPosition({0, 60}); CloseButton:SetXPosition({0, -20})
+CloseButton:registerEvent(GUIEvent.Click, function()
+    HideAll(); Show(OpenButton); Show(CreditScreen); Animate(CreditScreen); Animate(OpenButton)
+end)
+GUISystem.Instance():GetRootWindow():AddChildWindow(CloseButton)
+CloseButton:SetText("×"); CloseButton:SetLevel(0); CloseButton:SetTouchable(true); CloseButton:SetVisible(false)
+CloseButton:SetTextScale(1.5); CloseButton:SetBordered(true); CloseButton:SetBackgroundColor(Color.RED)
+
+function HideAll()
+    Hide(Background); Hide(CloseButton); HideItem()
+    for i=1,#tabs do Hide(tabs[i]) end
+    Hide(CreditText)
+end
+
+function ShowAll()
+    Show(Background); Show(CloseButton); ShowHackItem()
+    for i=1,#tabs do Show(tabs[i]); Animate(tabs[i]) end
+    Show(CreditText); Animate(CreditText)
+    local randomText = randomTexts[math.random(#randomTexts)]
+    CreditText:SetText(randomText)
+end
+
+OpenButton:registerEvent(GUIEvent.ButtonClick, function()
+    ShowAll(); Hide(OpenButton); Hide(CreditScreen)
+    Tab1:SetBackgroundColor({0, 100, 0, 255})
+    Animate(Background); Animate(CloseButton)
+    for _, v in pairs(hackList) do Animate(v) end
+end)
+
+-- === Hotkeys для Save TP и Back TP ===
+LuaTimer:scheduleTimer(function()
+    if InputHelper and InputHelper.isKeyDown then
+        if InputHelper.isKeyDown(59) then -- F1
+            Gmpanel.saveTP()
+        elseif InputHelper.isKeyDown(60) then -- F2
+            Gmpanel.backTP()
+        end
+    end
+end, 100, -1)
+
+function Gmpanel.DevFly()
+    local player = PlayerManager:getClientPlayer().Player
+    local moveDir = VectorUtil.newVector3(0.0, 1.35, 0.0)
+    player:setAllowFlying(true)
+    player:setFlying(true)     
+    player:moveEntity(moveDir)
+end
+
+function Gmpanel.enableInfJump()
+    ClientHelper.putBoolPrefs("EnableDoubleJumps", true)
+end
+function Gmpanel.disableInfJump()
+    ClientHelper.putBoolPrefs("EnableDoubleJumps", false)
+end
+
+function Gmpanel.enableSpeed()
+    PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(15000)
+end
+function Gmpanel.disableSpeed()
+    PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(15)
+end
+
+function Gmpanel.enableFastBreak()
+    for blockId = 1, 40000 do
+        local block = BlockManager.getBlockById(blockId)
+        if block then block:setHardness(0) end
+    end
+end
+function Gmpanel.disableFastBreak()
+    for blockId = 1, 40000 do
+        local block = BlockManager.getBlockById(blockId)
+        if block then block:setHardness(4) end
+    end
+end
+
+function Gmpanel.enableKillAura()
+    activeTimers["KillAura"] = LuaTimer:scheduleTimer(function()
+        local player = PlayerManager:getClientPlayer()
+        local nearestPlayer
+        local minDis = math.huge
+        for _, c_player in pairs(PlayerManager:getPlayers()) do
+            if c_player ~= player then
+                local distance = MathUtil:distanceSquare3d(c_player:getPosition(), player:getPosition())
+                if distance < 35 and distance < minDis then
+                    minDis = distance
+                    nearestPlayer = c_player
+                end
+            end
+        end
+        if nearestPlayer then
+            CGame.Instance():handleTouchClick(800, 360)
+        end
+    end, 100, -1)
+end
+function Gmpanel.disableKillAura() end
+
+function Gmpanel.enableNoFall()
+    ClientHelper.putIntPrefs("SprintLimitCheck", 0)
+end
+function Gmpanel.disableNoFall()
+    ClientHelper.putIntPrefs("SprintLimitCheck", 1)
+end
+
+function Gmpanel.enableBlink()
+    ClientHelper.putBoolPrefs("SyncClientPositionToServer", true)
+end
+function Gmpanel.disableBlink()
+    ClientHelper.putBoolPrefs("SyncClientPositionToServer", false)
+end
+
+function Gmpanel.enableScaffold()
+    activeTimers["Scaffold"] = LuaTimer:scheduleTimer(function()
+        local pos = PlayerManager:getClientPlayer():getPosition()
+        local function place(x, y, z) EngineWorld:setBlock(VectorUtil.newVector3(x, y, z), 5) end
+        place(pos.x, pos.y - 2, pos.z)
+        place(pos.x, pos.y - 2, pos.z + 1)
+        place(pos.x, pos.y - 2, pos.z - 1)
+        place(pos.x + 1, pos.y - 2, pos.z)
+        place(pos.x - 1, pos.y - 2, pos.z)
+    end, 100, -1)
+end
+function Gmpanel.disableScaffold()
+    ClientHelper.putIntPrefs("SprintLimitCheck", 0)
+end
+
+function Gmpanel.enableNoDelay()
+    activeTimers["AttackCD"] = LuaTimer:scheduleTimer(function()
+        local player = PlayerManager:getClientPlayer().Player
+        player:setIntProperty("bedWarAttackCD", 0)
+        ClientHelper.putBoolPrefs("banClickCD", true)
+    end, 100, -1)
+end
+function Gmpanel.disableNoDelay()
+    PlayerManager:getClientPlayer().Player:setIntProperty("bedWarAttackCD", nil)
+    ClientHelper.putBoolPrefs("banClickCD", false)
+end
+
+function Gmpanel.enableHitbox()
+    for _, player in pairs(PlayerManager:getPlayers()) do
+        if player ~= PlayerManager:getClientPlayer() then
+            local e = player.Player
+            e.height = 2.5; e.width = 3; e.length = 3
+        end
+    end
+end
+function Gmpanel.disableHitbox()
+    for _, player in pairs(PlayerManager:getPlayers()) do
+        if player ~= PlayerManager:getClientPlayer() then
+            local e = player.Player
+            e.height = 1.8; e.width = 0.6; e.length = 0.6
+        end
+    end
+end
+
+function Gmpanel.enableAirSpeed()
+    CEvents.PlayerJumpEvent:registerCallBack(function()
+        PlayerManager:getClientPlayer().Player:setGlide(true)
+    end)
+end
+function Gmpanel.disableAirSpeed()
+    CEvents.PlayerJumpEvent:unregisterAll()
+end
+
+function Gmpanel.enableAimBot()
+    activeTimers["Aimbot"] = LuaTimer:scheduleTimer(function()
+        local me = PlayerManager:getClientPlayer()
+        if not me then return end
+        local myPos = me.Player:getPosition()
+        local myTeamId = me.Player:getTeamId()
+        local closestPlayer, closestDistance = nil, math.huge
+        for _, player in pairs(PlayerManager:getPlayers()) do
+            if player ~= me and player.Player and player.Player:getTeamId() ~= myTeamId then
+                local dist = MathUtil:distanceSquare2d(player:getPosition(), myPos)
+                if dist < closestDistance then
+                    closestDistance = dist
+                    closestPlayer = player
+                end
+            end
+        end
+        if closestPlayer and closestDistance < 60 then
+            local camera = SceneManager.Instance():getMainCamera()
+            local pos = camera:getPosition()
+            local dir = VectorUtil.sub3(closestPlayer:getPosition(), pos)
+            local yaw = math.atan2(dir.x, dir.z) / math.pi * -180
+            local calculate = math.sqrt(dir.x * dir.x + dir.z * dir.z)
+            local pitch = -math.atan2(dir.y + 1.5, calculate) / math.pi * 180
+            me.Player.rotationYaw = yaw
+            me.Player.rotationPitch = pitch
+            CGame.Instance():handleTouchClick(800, 360)
+        end
+    end, 50, -1)
+end
+function Gmpanel.disableAimBot() end
+
+function Gmpanel.enableHighJump()
+    PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 1)
+end
+function Gmpanel.disableHighJump()
+    PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 0.4)
+end
+
+function Gmpanel.enableAutoClick()
+    activeTimers["AutoClicker"] = LuaTimer:scheduleTimer(function()
+        CGame.Instance():handleTouchClick(800, 360)
+    end, 100, -1)
+end
+function Gmpanel.disableAutoClick() end
+
+function Gmpanel.enableAntiKnockback()
+    states.lastHealth = nil
+    states.lastPosition = nil
+    activeTimers["AntiKnockBack"] = LuaTimer:scheduleTimer(function()
+        local me = PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local currentHealth = me.Player:getHealth()
+        local currentPosition = me.Player:getPosition()
+        if states.lastHealth and currentHealth < states.lastHealth and states.lastPosition then
+            me.Player:setPosition(states.lastPosition)
+        end
+        states.lastHealth = currentHealth
+        states.lastPosition = currentPosition
+    end, 10, -1)
+end
+function Gmpanel.disableAntiKnockback()
+    states.lastHealth = nil
+    states.lastPosition = nil
+end
+
+function Gmpanel.enableAntiVoid()
+    states.antiVoidPos = nil
+    activeTimers["AntiVoid"] = LuaTimer:scheduleTimer(function()
+        local player = PlayerManager:getClientPlayer().Player
+        if player.onGround then
+            states.antiVoidPos = player:getPosition()
+        elseif states.antiVoidPos and player:getPosition().y <= 1 then
+            player.noClip = true
+            player:setPosition(VectorUtil.newVector3(states.antiVoidPos.x, states.antiVoidPos.y + 2, states.antiVoidPos.z))
+            LuaTimer:schedule(function() player.noClip = false end, 100)
+        end
+    end, 10, -1)
+end
+function Gmpanel.disableAntiVoid()
+    states.antiVoidPos = nil
+end
+
+
+aqui esta otro codigo para q copies sus funciones 
+
+local GUIRoot = GUISystem.Instance():GetRootWindow()
+local GUIRoot = GUISystem.Instance():GetRootWindow()
+
+local mainButton = GUIManager:createGUIWindow(GUIType.Button, "MainHackButton")
+mainButton:SetText("")
+mainButton:SetWidth({0, 60})
+mainButton:SetHeight({0, 60})
+mainButton:SetXPosition({0, 1120})
+mainButton:SetYPosition({0, 220})
+mainButton:SetProperty("NormalImage", "set:gui_inventory_icon.json image:icon_bookrack")
+mainButton:SetProperty("PushedImage", "set:gui_inventory_icon.json image:icon_bookrack")
+mainButton:SetBackgroundColor({0, 0, 0, 0})
+mainButton:SetLevel(10)
+GUIRoot:AddChildWindow(mainButton)
+
+local activeTimers = {}
+local activeCallbacks = {}
+
+local function cancelTimersForFeature(featureName)
+    if activeTimers[featureName] then 
+        for _, timerId in ipairs(activeTimers[featureName]) do 
+            LuaTimer:cancel(timerId) 
+        end 
+        activeTimers[featureName] = nil 
+    end
+end
+
+local function cancelCallbacksForFeature(featureName)
+    if activeCallbacks[featureName] then 
+        for event, callbackId in pairs(activeCallbacks[featureName]) do 
+            Listener.unregisterCallBack(event, callbackId) 
+        end 
+        activeCallbacks[featureName] = nil 
+    end
+end
+
+local function registerTimer(featureName, timerId)
+    if not activeTimers[featureName] then 
+        activeTimers[featureName] = {} 
+    end 
+    table.insert(activeTimers[featureName], timerId)
+end
+
+local function registerCallback(featureName, event, callbackId)
+    if not activeCallbacks[featureName] then 
+        activeCallbacks[featureName] = {} 
+    end 
+    activeCallbacks[featureName][event] = callbackId
+end
+
+local function isPlayerInAir()
+    local player = PlayerManager:getClientPlayer()
+    if not player or not player.Player then return false end
+    
+    local pos = player.Player:getPosition()
+    local footY = pos.y - 1.7
+    
+    for i = 0, 1 do
+        local checkPos = VectorUtil.newVector3(pos.x, footY - i, pos.z)
+        if EngineWorld:getBlockId(checkPos) ~= 0 then
+            return false
+        end
+    end
+    
+    return true
+end
+
+local hackFeatures = {
+    {name = "Fly", onFunc = function() 
+        ClientHelper.putBoolPrefs("EnableDoubleJumps", true) 
+        UIHelper.showToast("^00FF00Fly Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("EnableDoubleJumps", false) 
+        UIHelper.showToast("^FF0000Fly Deactivated") 
+    end},
+    
+    {name = "DevFly", onFunc = function() 
+        local player = PlayerManager:getClientPlayer() 
+        player.Player:setAllowFlying(true) 
+        player.Player:setFlying(true) 
+        local pos = player.Player:getPosition()
+        player.Player:setPosition(VectorUtil.newVector3(pos.x, pos.y + 1.20, pos.z))
+        UIHelper.showToast("^00FF00DevFly Activated") 
+    end, offFunc = function() 
+        local player = PlayerManager:getClientPlayer() 
+        player.Player:setAllowFlying(false) 
+        player.Player:setFlying(false) 
+        UIHelper.showToast("^FF0000DevFly Deactivated") 
+    end},
+    
+    {name = "Speed", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(300000) 
+        UIHelper.showToast("^00FF00Speed Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player:setSpeedAdditionLevel(0) 
+        UIHelper.showToast("^FF0000Speed Deactivated") 
+    end},
+    
+    {name = "HighJump", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 1) 
+        UIHelper.showToast("^00FF00HighJump Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 0.4) 
+        UIHelper.showToast("^FF0000HighJump Deactivated") 
+    end},
+    
+    {name = "NoFall", onFunc = function() 
+        ClientHelper.putIntPrefs("SprintLimitCheck", 1) 
+        UIHelper.showToast("^00FF00NoFall Activated") 
+    end, offFunc = function() 
+        ClientHelper.putIntPrefs("SprintLimitCheck", 0) 
+        UIHelper.showToast("^FF0000NoFall Deactivated") 
+    end},
+    
+    {name = "HitBox", onFunc = function() 
+        for _, player in ipairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.height = 10 
+                player.Player.width = 10 
+                player.Player.length = 10 
+            end 
+        end 
+        UIHelper.showToast("^00FF00HitBox Activated") 
+    end, offFunc = function() 
+        for _, player in ipairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.height = 2.0 
+                player.Player.width = 2.0 
+                player.Player.length = 2.0 
+            end 
+        end 
+        UIHelper.showToast("^FF0000HitBox Deactivated") 
+    end},
+    
+    {name = "NoClip", onFunc = function() 
+        PlayerManager:getClientPlayer().Player.noClip = true 
+        UIHelper.showToast("^00FF00NoClip Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player.noClip = false 
+        UIHelper.showToast("^FF0000NoClip Deactivated") 
+    end},
+    
+    {name = "Blink", onFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", false) 
+        UIHelper.showToast("^00FF00Blink Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", true) 
+        UIHelper.showToast("^FF0000Blink Deactivated") 
+    end},
+    
+    {name = "JetPack", onFunc = function() 
+        local timerId = LuaTimer:scheduleTimer(function() 
+            local player = PlayerManager:getClientPlayer().Player 
+            local yaw = math.rad(player:getYaw()) 
+            local pitch = math.rad(player:getPitch()) 
+            local moveX = -math.sin(yaw) * math.cos(pitch) * 0.5 
+            local moveY = -math.sin(pitch) * 0.5 
+            local moveZ = math.cos(yaw) * math.cos(pitch) * 0.5 
+            player:setVelocity(VectorUtil.newVector3(moveX, moveY, moveZ)) 
+        end, 50, -1) 
+        registerTimer("JetPack", timerId) 
+        UIHelper.showToast("^00FF00JetPack Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("JetPack") 
+        UIHelper.showToast("^FF0000JetPack Deactivated") 
+    end},
+    
+    {name = "TpKill", onFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", false) 
+        registerTimer("TpKill", LuaTimer:scheduleTimer(function() 
+            CGame.Instance():handleTouchClick(800, 360) 
+        end, 0.1, -1)) 
+        for _, player in pairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.width = 5 
+                player.Player.height = 6 
+                player.Player.length = 5 
+            end 
+        end 
+        registerTimer("TpKill", LuaTimer:scheduleTimer(function() 
+            local clientPlayer = PlayerManager:getClientPlayer() 
+            if not clientPlayer then return end 
+            local myPos = clientPlayer.Player:getPosition() 
+            local nearestPlayer = nil 
+            local minDistance = math.huge 
+            for _, player in pairs(PlayerManager:getPlayers()) do 
+                if player ~= clientPlayer then 
+                    local playerPos = player.Player:getPosition() 
+                    local distance = MathUtil:distanceSquare2d(playerPos, myPos) 
+                    if distance < minDistance and distance <= 360000 then 
+                        minDistance = distance 
+                        nearestPlayer = player 
+                    end 
+                end 
+            end 
+            if nearestPlayer then 
+                local targetPos = nearestPlayer.Player:getPosition() 
+                clientPlayer.Player:setPosition(VectorUtil.newVector3(
+                    targetPos.x, 
+                    targetPos.y + 2.6, 
+                    targetPos.z 
+                )) 
+            end 
+        end, 16, -1)) 
+        UIHelper.showToast("^00FF00TpKill Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("SyncClientPositionToServer", true) 
+        cancelTimersForFeature("TpKill") 
+        for _, player in pairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.width = 2.0 
+                player.Player.height = 2.0 
+                player.Player.length = 2.0 
+            end 
+        end 
+        UIHelper.showToast("^FF0000TpKill Deactivated") 
+    end},
+    
+    {name = "NoDelay", onFunc = function() 
+        ClientHelper.putBoolPrefs("banClickCD", true) 
+        ClientHelper.putBoolPrefs("RemoveClickCD", true) 
+        ClientHelper.putIntPrefs("HurtProtectTime", 0) 
+        ClientHelper.putBoolPrefs("BanEntityHitCD", true) 
+        ClientHelper.putIntPrefs("ClickSceneCD", 0) 
+        PlayerManager:getClientPlayer().Player:setIntProperty("bedWarAttackCD", 0) 
+        UIHelper.showToast("^00FF00NoDelay Activated") 
+    end, offFunc = function() 
+        ClientHelper.putBoolPrefs("banClickCD", false) 
+        ClientHelper.putBoolPrefs("RemoveClickCD", false) 
+        ClientHelper.putIntPrefs("HurtProtectTime", 5) 
+        ClientHelper.putBoolPrefs("BanEntityHitCD", false) 
+        ClientHelper.putIntPrefs("ClickSceneCD", 5) 
+        PlayerManager:getClientPlayer().Player:setIntProperty("bedWarAttackCD", 5) 
+        UIHelper.showToast("^FF0000NoDelay Deactivated") 
+    end},
+    
+    {name = "Scaffold", onFunc = function() 
+        registerTimer("Scaffold", LuaTimer:scheduleTimer(function() 
+            local pos = PlayerManager:getClientPlayer():getPosition() 
+            EngineWorld:setBlock(VectorUtil.newVector3(pos.x, pos.y - 2, pos.z), 7) 
+        end, 0.2, -1)) 
+        UIHelper.showToast("^00FF00Scaffold Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("Scaffold") 
+        UIHelper.showToast("^FF0000Scaffold Deactivated") 
+    end},
+    
+    {name = "TargetAura", onFunc = function() 
+        registerTimer("TargetAura", LuaTimer:scheduleTimer(function() 
+            local client = PlayerManager:getClientPlayer() 
+            if not client then return end 
+            local target = nil 
+            local minDist = 6 * 6 
+            for _, player in pairs(PlayerManager:getPlayers()) do 
+                if player ~= client then 
+                    local pos = player.Player:getPosition() 
+                    local dx = pos.x - client.Player:getPosition().x 
+                    local dz = pos.z - client.Player:getPosition().z 
+                    local dist = dx*dx + dz*dz 
+                    if dist < minDist then 
+                        minDist = dist 
+                        target = player 
+                    end 
+                end 
+            end 
+            if target then 
+                local targetPos = target.Player:getPosition() 
+                local client = PlayerManager:getClientPlayer().Player 
+                local offsetX = (math.random() * 6) - 3 
+                local offsetZ = (math.random() * 6) - 3 
+                client:setPosition(VectorUtil.newVector3(
+                    targetPos.x + offsetX, 
+                    targetPos.y + 3, 
+                    targetPos.z + offsetZ 
+                )) 
+            end 
+        end, 88, -1)) 
+        UIHelper.showToast("^00FF00TargetAura Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("TargetAura") 
+        UIHelper.showToast("^FF0000TargetAura Deactivated") 
+    end},
+    
+    {name = "ItemThief", onFunc = function() 
+        registerTimer("ItemThief", LuaTimer:scheduleTimer(function() 
+            local clientPlayer = PlayerManager:getClientPlayer() 
+            if not clientPlayer then return end 
+            local playerPos = clientPlayer.Player:getPosition() 
+            local closestItem = nil 
+            local minDistance = math.huge 
+            for _, entityData in pairs(EntityCache:getAllEntity()) do 
+                if entityData.type == EntityType.Item then 
+                    local itemPos = entityData.entity:getPosition() 
+                    local dx = playerPos.x - itemPos.x 
+                    local dz = playerPos.z - itemPos.z 
+                    local distance = math.sqrt(dx*dx + dz*dz) 
+                    if distance < minDistance then 
+                        minDistance = distance 
+                        closestItem = entityData.entity 
+                    end 
+                end 
+            end 
+            if closestItem and minDistance > 1 then 
+                local itemPos = closestItem:getPosition() 
+                clientPlayer.Player:setPosition(VectorUtil.newVector3(
+                    itemPos.x, 
+                    itemPos.y + 2.2, 
+                    itemPos.z 
+                )) 
+            end 
+        end, 60, -1)) 
+        UIHelper.showToast("^00FF00ItemThief Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("ItemThief") 
+        UIHelper.showToast("^FF0000ItemThief Deactivated") 
+    end},
+    
+    {name = "AutoClick", onFunc = function() 
+        registerTimer("AutoClick", LuaTimer:scheduleTimer(function() 
+            CGame.Instance():handleTouchClick(800, 360) 
+        end, 18, -1)) 
+        UIHelper.showToast("^00FF00AutoClick Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("AutoClick") 
+        UIHelper.showToast("^FF0000AutoClick Deactivated") 
+    end},
+    
+    {name = "AimBot", onFunc = function() 
+        registerTimer("AimBot", LuaTimer:scheduleTimer(function() 
+            local client = PlayerManager:getClientPlayer() 
+            if not client then return end 
+            local myPos = client.Player:getPosition() 
+            local closest, dist = nil, 36 
+            for _, enemy in pairs(PlayerManager:getPlayers()) do 
+                if enemy ~= client then 
+                    local ePos = enemy:getPosition() 
+                    local d = (ePos.x-myPos.x)^2 + (ePos.y-myPos.y)^2 + (ePos.z-myPos.z)^2 
+                    if d < dist then 
+                        closest, dist = enemy, d 
+                    end 
+                end 
+            end 
+            if closest and dist <= 36 then 
+                local dir = VectorUtil.sub3(closest:getPosition(), myPos) 
+                dir.y = dir.y + 1 
+                client.Player.rotationYaw = math.atan2(dir.x, dir.z) * (-180/math.pi) 
+                client.Player.rotationPitch = -math.atan2(dir.y, math.sqrt(dir.x^2 + dir.z^2)) * (180/math.pi) 
+            end 
+        end, 12, -1)) 
+        UIHelper.showToast("^00FF00AimBot Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("AimBot") 
+        UIHelper.showToast("^FF0000AimBot Deactivated") 
+    end},
+    
+    {name = "KillAura", onFunc = function() 
+        registerTimer("KillAura", LuaTimer:scheduleTimer(function() 
+            local clientPlayer = PlayerManager:getClientPlayer() 
+            if not clientPlayer then return end 
+            local myPos = clientPlayer.Player:getPosition() 
+            local shouldAutoClick = false 
+            for _, playerData in pairs(PlayerManager:getPlayers()) do 
+                if playerData ~= clientPlayer then 
+                    local player = playerData.Player 
+                    local playerPos = player:getPosition() 
+                    local distance = math.sqrt(
+                        (playerPos.x - myPos.x)^2 + 
+                        (playerPos.y - myPos.y)^2 + 
+                        (playerPos.z - myPos.z)^2 
+                    ) 
+                    if distance <= 6 then 
+                        player.width = 6 
+                        player.height = 6 
+                        player.length = 6 
+                        shouldAutoClick = true 
+                    else 
+                        player.width = 2.0 
+                        player.height = 2.0 
+                        player.length = 2.0 
+                    end 
+                end 
+            end 
+            if shouldAutoClick then 
+                CGame.Instance():handleTouchClick(800, 360) 
+            end 
+        end, 50, -1)) 
+        UIHelper.showToast("^00FF00KillAura Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("KillAura") 
+        for _, player in pairs(PlayerManager:getPlayers()) do 
+            if player ~= PlayerManager:getClientPlayer() then 
+                player.Player.width = 2.0 
+                player.Player.height = 2.0 
+                player.Player.length = 2.0 
+            end 
+        end 
+        UIHelper.showToast("^FF0000KillAura Deactivated") 
+    end},
+    
+    {name = "Fov", onFunc = function() 
+        Blockman.Instance().m_gameSettings:setFovSetting(2.2) 
+        UIHelper.showToast("^00FF00Fov Activated") 
+    end, offFunc = function() 
+        Blockman.Instance().m_gameSettings:setFovSetting(1.0) 
+        UIHelper.showToast("^FF0000Fov Deactivated") 
+    end},
+    
+    {name = "Tracer", onFunc = function() 
+        registerTimer("Tracer", LuaTimer:scheduleTimer(function() 
+            local myPlayer = PlayerManager:getClientPlayer() 
+            if not myPlayer then return end 
+            myPlayer.Player:deleteAllGuideArrow() 
+            for _, player in pairs(PlayerManager:getPlayers()) do 
+                if player ~= myPlayer then 
+                    local pos = player.Player:getPosition() 
+                    pos.y = pos.y + 1 
+                    myPlayer.Player:addGuideArrow(pos) 
+                end 
+            end 
+        end, 260, -1)) 
+        UIHelper.showToast("^00FF00Tracer Activated") 
+    end, offFunc = function() 
+        cancelTimersForFeature("Tracer") 
+        PlayerManager:getClientPlayer().Player:deleteAllGuideArrow()
+        UIHelper.showToast("^FF0000Tracer Deactivated") 
+    end},
+    
+    {name = "Parachute", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:startParachute() 
+        UIHelper.showToast("^00FF00Parachute Activated") 
+    end, offFunc = function() 
+        UIHelper.showToast("^FF0000Parachute Will Deactivate On Landing") 
+    end},
+    
+    {name = "Reach", onFunc = function() 
+        ClientHelper.putFloatPrefs("BlockReachDistance", 999) 
+        ClientHelper.putFloatPrefs("EntityReachDistance", 999) 
+        UIHelper.showToast("^00FF00Reach Activated") 
+    end, offFunc = function() 
+        ClientHelper.putFloatPrefs("BlockReachDistance", 6.5) 
+        ClientHelper.putFloatPrefs("EntityReachDistance", 6.5) 
+        UIHelper.showToast("^FF0000Reach Deactivated") 
+    end},
+    
+    {name = "Skate", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setBoolProperty("DisableUpdateAnimState", true) 
+        UIHelper.showToast("^00FF00Skate Activated") 
+    end, offFunc = function() 
+        PlayerManager:getClientPlayer().Player:setBoolProperty("DisableUpdateAnimState", false) 
+        UIHelper.showToast("^FF0000Skate Deactivated") 
+    end},
+    
+    {name = "TpClick", onFunc = function() 
+        registerCallback("TpClick", CEvents.ClickToBlockEvent, Listener.registerCallBack(CEvents.ClickToBlockEvent, function(event) 
+            PlayerManager:getClientPlayer().Player:setPosition(VectorUtil.newVector3(event.x, event.y + 3, event.z)) 
+        end)) 
+        UIHelper.showToast("^00FF00TpClick Activated") 
+    end, offFunc = function() 
+        cancelCallbacksForFeature("TpClick") 
+        UIHelper.showToast("^FF0000TpClick Deactivated") 
+    end},
+    
+    {name = "WingFly", onFunc = function() 
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 1) 
+        
+        local timerId = LuaTimer:scheduleTimer(function()
+            local player = PlayerManager:getClientPlayer()
+            if not player or not player.Player then return end
+            
+            local inAir = isPlayerInAir()
+            if inAir then
+                if player.Player.m_wingId ~= 27 then
+                    player.Player.m_outLooksChanged = true
+                    player.Player.m_wingId = 27
+                    player.Player.m_isGlide = true
+                    player.Player.m_glideMoveAddition = 0.8
+                    player.Player.m_glideDropResistance = 0.5
+                    SoundUtil.playSound(325)
+                end
+            else
+                if player.Player.m_wingId == 27 then
+                    player.Player.m_outLooksChanged = true
+                    player.Player.m_wingId = 0
+                    player.Player.m_isGlide = false
+                end
+            end
+        end, 50, -1)
+        
+        registerTimer("WingFly", timerId)
+        UIHelper.showToast("^00FF00WingFly Activated")
+    end,
+    offFunc = function() 
+        cancelTimersForFeature("WingFly")
+        PlayerManager:getClientPlayer().Player:setFloatProperty("JumpHeight", 0.4)
+        
+        local player = PlayerManager:getClientPlayer()
+        if player and player.Player and player.Player.m_wingId == 27 then
+            player.Player.m_outLooksChanged = true
+            player.Player.m_wingId = 0
+            player.Player.m_isGlide = false
+        end
+        
+        UIHelper.showToast("^FF0000WingFly Deactivated")
+    end}
+}
+
+local activeHacks = {}
+local hackButtons = {}
+local buttonWidth = 150
+local buttonHeight = 45
+local startX = 20
+local startY = 80
+local columns = 4
+local horizontalSpacing = 10
+local verticalSpacing = 10
+
+for i, feature in ipairs(hackFeatures) do
+    local col = (i-1) % columns
+    local row = math.floor((i-1) / columns)
+    local btn = GUIManager:createGUIWindow(GUIType.Button, "HackBtn" .. feature.name)
+    btn:SetText("^FF0000" .. feature.name .. ":OFF")
+    btn:SetWidth({0, buttonWidth})
+    btn:SetHeight({0, buttonHeight})
+    btn:SetXPosition({0, startX + col * (buttonWidth + horizontalSpacing)})
+    btn:SetYPosition({0, startY + row * (buttonHeight + verticalSpacing)})
+    btn:SetBackgroundColor({0, 0, 0, 0.8})
+    btn:SetVisible(false)
+    btn:SetLevel(9)
+    GUIRoot:AddChildWindow(btn)
+    activeHacks[feature.name] = false
+    hackButtons[feature.name] = btn
+    btn:registerEvent(GUIEvent.ButtonClick, function()
+        activeHacks[feature.name] = not activeHacks[feature.name]
+        if activeHacks[feature.name] then
+            btn:SetText("^00FF00" .. feature.name .. ":ON")
+            feature.onFunc()
+        else
+            btn:SetText("^FF0000" .. feature.name .. ":OFF")
+            feature.offFunc()
+        end
+    end)
+end
+
+local buttonsVisible = false
+mainButton:registerEvent(GUIEvent.ButtonClick, function()
+    buttonsVisible = not buttonsVisible
+    for _, btn in pairs(hackButtons) do 
+        btn:SetVisible(buttonsVisible) 
+    end
+end)
+
+local colors = {
+    "^FF0000", "^FF4000", "^FF8000", "^FFBF00", 
+    "^FFFF00", "^BFFF00", "^80FF00", "^00FF80", 
+    "^00FFFF", "^0080FF", "^0000FF", "^8000FF", 
+    "^BF00FF", "^FF00FF"
+}
+local currentColorIndex = 1
+LuaTimer:scheduleTimer(function()
+    MsgSender.sendBottomTips(5, colors[currentColorIndex] .. "RunCode GuiHack ReleaseV0.1")
+    currentColorIndex = currentColorIndex + 1
+    if currentColorIndex > #colors then 
+        currentColorIndex = 1 
+    end
+end, 120, -1)
+
+local function unloadAll()
+    for featureName, isActive in pairs(activeHacks) do
+        if isActive then
+            for _, feature in ipairs(hackFeatures) do
+                if feature.name == featureName then
+                    feature.offFunc()
+                    break
+                end
+            end
+        end
+    end
+    
+    if mainButton then
+        GUIRoot:RemoveChildWindow(mainButton)
+        GUIManager:destroyWindow(mainButton)
+    end
+    
+    for _, btn in pairs(hackButtons) do
+        GUIRoot:RemoveChildWindow(btn)
+        GUIManager:destroyWindow(btn)
+    end
+end
+
+return {
+    unload = unloadAll
+}
+
+Este es mi codigo aqui usa todos lo q es el autoplay (q lo llamaras aimback), usa el speed, flyv2, jump, antigravity hitbix, autoclick y asi
+
+aqui esta mi codigo:
+
+local pos=VectorUtil.newVector3
+function Animate(Gui)
+    local scale=0.5
+    Gui:SetScale(pos(scale,scale,scale))
+    local timer=LuaTimer:scheduleTicker(function()
+        if scale<=1 then scale=scale+0.1 else scale=scale-0.025 end
+        Gui:SetScale(pos(scale,scale,scale))
+    end,1,10)
+end
+function Hide(G) G:SetVisible(false) end
+function Show(G) G:SetVisible(true) end
+red="^FF0000"
+green="^00FF00"
+cyan="^00FFFF"
+Gmpanel=GMHelper
+local states={}
+local activeTimers={}
+local savedPositions={}
+local buttonReferences={}
+local buttonTimers={}
+local HitBoxButton
+local AirSpeedButton
+local SpeedButton
+local JumpButton
+local FovMenuButton
+local Fov2xButton
+local AutoClickButton
+local KillButton
+local AimBackButton
+local AimBack2Button
+local ScaffoldButton
+local ScaffoldSaveButton
+local AutoPlayButton
+function playSound(name,pitch)
+    local player=PlayerManager:getClientPlayer()
+    if player and player.Player then
+        player.Player:playSound(name or "random.click",pitch or 1.0)
+    end
+end
+local function interpolateColor(hue)
+    local r,g,b=0,0,0
+    if hue<60 then r,g,b=1,hue/60,0
+    elseif hue<120 then r,g,b=(120-hue)/60,1,0
+    elseif hue<180 then r,g,b=0,1,(hue-120)/60
+    elseif hue<240 then r,g,b=0,(240-hue)/60,1
+    elseif hue<300 then r,g,b=(hue-240)/60,0,1
+    else r,g,b=1,0,(360-hue)/60 end
+    return r,g,b
+end
+function updateButtonAppearance(btn,isActive)
+    if not btn then return end
+    local text=btn:GetText():gsub(" %[%w+%]","")
+    local activeColor={0,0.39,0,1}
+    local inactiveColor={0,0,0,0.8}
+    local activeTextColor={1,1,1,1}
+    local inactiveTextColor={1,1,1,1}
+    if isActive then
+        btn:SetBackgroundColor(activeColor)
+        btn:SetTextColor(activeTextColor)
+        btn:SetText(text)
+        if buttonTimers[btn] then LuaTimer:cancel(buttonTimers[btn]); buttonTimers[btn]=nil end
+    else
+        btn:SetBackgroundColor(inactiveColor)
+        btn:SetText(text)
+        local isMenuButton=false
+        for _,refBtn in pairs(buttonReferences) do
+            if refBtn==btn then isMenuButton=true; break end
+        end
+        if btn:GetName():find("HackButton_") and not buttonTimers[btn] and isMenuButton then
+            local hue_start=os.time()%360
+            local timer=LuaTimer:scheduleTimer(function()
+                hue_start=(hue_start+0.5)%360
+                local r,g,b=interpolateColor(hue_start)
+                btn:SetTextColor({r,g,b,0.6})
+            end,50,-1)
+            buttonTimers[btn]=timer
+        else
+            if not isMenuButton then btn:SetTextColor(inactiveTextColor) end
+        end
+    end
+end
+function toggleHack(btn,hackName,enableFunc,disableFunc,soundOn,soundOff)
+    states[hackName]=not (states[hackName] or false)
+    local isActive=states[hackName]
+    updateButtonAppearance(btn,isActive)
+    if isActive then
+        UIHelper.showToast(green..hackName..": ACTIVADO")
+        playSound(soundOn or "random.orb",1.0)
+        if enableFunc then enableFunc() end
+    else
+        UIHelper.showToast(red..hackName..": DESACTIVADO")
+        playSound(soundOff or "random.click",0.8)
+        if disableFunc then disableFunc() end
+        if activeTimers[hackName] then
+            LuaTimer:cancel(activeTimers[hackName])
+            activeTimers[hackName]=nil
+        end
+    end
+end
+function toggleAimBack()
+    if states["AimBack 2.0"] then toggleHack(AimBack2Button,"AimBack 2.0",Gmpanel.enableAimBackV2,Gmpanel.disableAimBackV2) end
+    toggleHack(AimBackButton,"AimBack",Gmpanel.enableAimBackNormal,Gmpanel.disableAimBackNormal)
+end
+function toggleAimBackV2()
+    if states["AimBack"] then toggleHack(AimBackButton,"AimBack",Gmpanel.enableAimBackNormal,Gmpanel.disableAimBackNormal) end
+    toggleHack(AimBack2Button,"AimBack 2.0",Gmpanel.enableAimBackV2,Gmpanel.disableAimBackV2)
+end
+function toggleFov2x()
+    toggleHack(Fov2xButton,"Fov 2x",Gmpanel.enableFov,Gmpanel.disableFov)
+end
+function toggleAutoClicker()
+    toggleHack(AutoClickButton,"AutoClicker",Gmpanel.enableAutoClicker,Gmpanel.disableAutoClicker)
+end
+function Gmpanel.enableAirSpeed()
+    CEvents.PlayerJumpEvent:registerCallBack(function()
+        local me=PlayerManager:getClientPlayer()
+        if me and me.Player then me.Player:setGlide(true) end
+    end)
+end
+function Gmpanel.disableAirSpeed() CEvents.PlayerJumpEvent:unregisterAll() end
+function Gmpanel.enableHitbox()
+    activeTimers["HitBox"]=LuaTimer:scheduleTimer(function()
+        local me=PlayerManager:getClientPlayer()
+        for _,p in pairs(PlayerManager:getPlayers()) do
+            if p~=me and p.Player then p.Player.height=2.5; p.Player.width=3 end
+        end
+    end,100,-1)
+end
+function Gmpanel.disableHitbox()
+    if activeTimers["HitBox"] then LuaTimer:cancel(activeTimers["HitBox"]); activeTimers["HitBox"]=nil end
+    local me=PlayerManager:getClientPlayer()
+    for _,p in pairs(PlayerManager:getPlayers()) do
+        if p~=me and p.Player then p.Player.height=1.8; p.Player.width=0.6 end
+    end
+end
+function Gmpanel.enableSpeed()
+    activeTimers["Speed"]=LuaTimer:scheduleTimer(function()
+        local me=PlayerManager:getClientPlayer()
+        if me and me.Player then me.Player:setSpeedAdditionLevel(15000) end
+    end,100,-1)
+end
+function Gmpanel.disableSpeed()
+    if activeTimers["Speed"] then LuaTimer:cancel(activeTimers["Speed"]); activeTimers["Speed"]=nil end
+    local me=PlayerManager:getClientPlayer()
+    if me and me.Player then me.Player:setSpeedAdditionLevel(15) end
+end
+function Gmpanel.enableHighJump()
+    activeTimers["HighJump"]=LuaTimer:scheduleTimer(function()
+        local me=PlayerManager:getClientPlayer()
+        if me and me.Player then me.Player:setFloatProperty("JumpHeight",1.25) end
+    end,100,-1)
+end
+function Gmpanel.disableHighJump()
+    if activeTimers["HighJump"] then LuaTimer:cancel(activeTimers["HighJump"]); activeTimers["HighJump"]=nil end
+    local me=PlayerManager:getClientPlayer()
+    if me and me.Player then me.Player:setFloatProperty("JumpHeight",0.4) end
+end
+function Gmpanel.enableFov()
+    activeTimers["Fov 2x"]=LuaTimer:scheduleTimer(function()
+        pcall(function() Blockman.Instance().m_gameSettings:setFovSetting(2) end)
+    end,50,-1)
+end
+function Gmpanel.disableFov()
+    if activeTimers["Fov 2x"] then LuaTimer:cancel(activeTimers["Fov 2x"]); activeTimers["Fov 2x"]=nil end
+    pcall(function() Blockman.Instance().m_gameSettings:setFovSetting(0.8) end)
+end
+function Gmpanel.enableAutoClicker()
+    activeTimers["AutoClicker"]=LuaTimer:scheduleTimer(function()
+        pcall(function() CGame.Instance():handleTouchClick(791,564) end)
+    end,1,-1)
+end
+function Gmpanel.disableAutoClicker()
+    if activeTimers["AutoClicker"] then LuaTimer:cancel(activeTimers["AutoClicker"]); activeTimers["AutoClicker"]=nil end
+end
+function toggleFlyV2() toggleHack(AirSpeedButton,"Fly v2",Gmpanel.enableAirSpeed,Gmpanel.disableAirSpeed) end
+function toggleHitBox() toggleHack(HitBoxButton,"HitBox",Gmpanel.enableHitbox,Gmpanel.disableHitbox) end
+function toggleSpeed() toggleHack(SpeedButton,"Speed",Gmpanel.enableSpeed,Gmpanel.disableSpeed) end
+function toggleJump() toggleHack(JumpButton,"Jump",Gmpanel.enableHighJump,Gmpanel.disableHighJump) end
+function toggleScaffold() toggleHack(ScaffoldButton,"AntiGravity",Gmpanel.enableAntiGravity,Gmpanel.disableAntiGravity) end
+local function isBlockAir(targetPos)
+    local bId=-1
+    local s1,r1=pcall(function() return EngineWorld:getBlockId(targetPos) end)
+    if s1 and type(r1)=="number" then bId=r1 end
+    if bId==-1 then
+        local s2,r2=pcall(function() return EngineWorld:getBlock(targetPos) end)
+        if s2 then
+            if type(r2)=="number" then bId=r2
+            elseif type(r2)=="table" then bId=r2.id or r2.blockId or -1 end
+        end
+    end
+    return (bId==0)
+end
+states.tpCooldown=0
+states.auraTimerMs=0
+states.auraNextDelay=math.random(480,550)
+states.antiStuckTick=0
+states.escapeCooldown=0
+states.lastPos=nil
+function Gmpanel.enableAimBackNormal()
+    activeTimers["AimBack"]=LuaTimer:scheduleTimer(function()
+        if states.tpCooldown>0 then states.tpCooldown=states.tpCooldown-1 end
+        if states.escapeCooldown>0 then states.escapeCooldown=states.escapeCooldown-1 end
+        local me=PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local myPos=me.Player:getPosition()
+        local myTeamId=me.Player:getTeamId()
+        local closestPlayer,closestDistance=nil,math.huge
+        local players=PlayerManager:getPlayers() or {}
+        states.auraTimerMs=states.auraTimerMs+50
+        if states.auraTimerMs>=states.auraNextDelay then
+            for _,playerw in pairs(players) do
+                if playerw and playerw~=me and playerw.Player and playerw.Player:getTeamId()~=myTeamId then
+                    local pPos=playerw:getPosition()
+                    local dx,dy,dz=pPos.x-myPos.x,pPos.y-myPos.y,pPos.z-myPos.z
+                    local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
+                    if dist<=5.55 then
+                        local entityIda=playerw.entityId
+                        local rPos=pos(math.floor(pPos.x),math.floor(pPos.y),math.floor(pPos.z))
+                        if Attack then pcall(function() Attack(entityIda,rPos) end) end
+                    end
+                end
+            end
+            states.auraTimerMs=0; states.auraNextDelay=math.random(480,550)
+        end
+        for _,player in pairs(players) do
+            if player~=me and player.Player and player.Player:getTeamId()~=myTeamId then
+                local pPos=player:getPosition(); local diffY=math.abs(pPos.y-myPos.y)
+                if diffY<=3.0 then
+                    local dx=pPos.x-myPos.x; local dz=pPos.z-myPos.z
+                    local dist=math.sqrt(dx*dx+dz*dz)
+                    if dist<closestDistance then closestDistance=dist; closestPlayer=player end
+                end
+            end
+        end
+        if closestPlayer and closestDistance<=6.0 then
+            local targetPos=closestPlayer:getPosition(); local targetYaw=closestPlayer.Player:getYaw()
+            local currentPos=me.Player:getPosition()
+            states.antiStuckTick=states.antiStuckTick+1
+            if states.antiStuckTick>10 then
+                if states.lastPos then
+                    local moved=math.sqrt((currentPos.x-states.lastPos.x)^2+(currentPos.z-states.lastPos.z)^2)
+                    if moved<0.3 and states.escapeCooldown<=0 then
+                        local dx=currentPos.x-targetPos.x; local dz=currentPos.z-targetPos.z
+                        local distance=math.sqrt(dx*dx+dz*dz)
+                        local newX=currentPos.x+(distance>0 and (dx/distance) or (math.random()-0.5))*4.0
+                        local newZ=currentPos.z+(distance>0 and (dz/distance) or (math.random()-0.5))*4.0
+                        if currentPos.y>2 then me.Player:setPosition(VectorUtil.newVector3(newX,currentPos.y,newZ)); states.escapeCooldown=60 end
+                    end
+                end
+                states.lastPos=currentPos; states.antiStuckTick=0
+            end
+            local heightDiff=targetPos.y-currentPos.y
+            if heightDiff>=0.8 and heightDiff<=3.5 then
+                if states.tpCooldown<=0 then
+                    local yawRad=math.rad(targetYaw)
+                    local backX=targetPos.x+math.sin(yawRad)*2.0; local backZ=targetPos.z-math.cos(yawRad)*2.0
+                    me.Player:setPosition(VectorUtil.newVector3(backX,targetPos.y,backZ)); states.tpCooldown=math.random(70,100)
+                end
+            else
+                local orbitAngles={35,-35,80,-80,120,-120,180}; local backX,backZ; local foundPath=false
+                for _,angle in ipairs(orbitAngles) do
+                    local rad=math.rad(targetYaw+angle)
+                    backX=targetPos.x+math.sin(rad)*3.0; backZ=targetPos.z-math.cos(rad)*3.0
+                    if isBlockAir(pos(backX,currentPos.y,backZ)) and isBlockAir(pos(backX,currentPos.y+1,backZ)) then foundPath=true; break end
+                end
+                if not foundPath then local rad=math.rad(targetYaw+35); backX=targetPos.x+math.sin(rad)*3.0; backZ=targetPos.z-math.cos(rad)*3.0 end
+                local diffX=backX-currentPos.x; local diffZ=backZ-currentPos.z
+                local distBack=math.sqrt(diffX*diffX+diffZ*diffZ); local dirX,dirZ,speed=0,0,0
+                if distBack>0.3 then
+                    dirX=diffX/distBack; dirZ=diffZ/distBack; speed=math.random(110,120)/100
+                    if distBack<1.0 then speed=speed*math.max(0.4,distBack) end
+                end
+                if not isBlockAir(pos(currentPos.x+dirX*1.5,currentPos.y,currentPos.z+dirZ*1.5)) then
+                    me.Player:setFloatProperty("JumpHeight",0.6); me.Player:jump()
+                    local sx=-dirZ; local sz=dirX
+                    if isBlockAir(pos(currentPos.x+sx*1.5,currentPos.y,currentPos.z+sz*1.5)) then dirX=sx; dirZ=sz
+                    else dirX=-sx; dirZ=-sz end
+                end
+                me.Player:setVelocity(VectorUtil.newVector3(dirX*speed,-0.2,dirZ*speed))
+            end
+            currentPos=me.Player:getPosition()
+            local dir=VectorUtil.sub3(targetPos,currentPos)
+            local tYaw=math.atan2(dir.x,dir.z)/math.pi*-180
+            local calc=math.sqrt(dir.x*dir.x+dir.z*dir.z)
+            local tPitch=-math.atan2(dir.y+1.5,calc)/math.pi*180
+            local cYaw=me.Player.rotationYaw; local cPitch=me.Player.rotationPitch
+            local dYaw=tYaw-cYaw
+            if dYaw>180 then dYaw=dYaw-360 end; if dYaw<-180 then dYaw=dYaw+360 end
+            local sf=math.random(15,40)/100
+            me.Player.rotationYaw=cYaw+dYaw*sf; me.Player.rotationPitch=cPitch+(tPitch-cPitch)*sf
+        end
+    end,50,-1)
+end
+function Gmpanel.disableAimBackNormal()
+    states.tpCooldown=0; states.auraTimerMs=0; states.antiStuckTick=0; states.escapeCooldown=0
+    if activeTimers["AimBack"] then LuaTimer:cancel(activeTimers["AimBack"]); activeTimers["AimBack"]=nil end
+end
+function Gmpanel.enableAimBackV2()
+    activeTimers["AimBack 2.0"]=LuaTimer:scheduleTimer(function()
+        if states.tpCooldown>0 then states.tpCooldown=states.tpCooldown-1 end
+        if states.escapeCooldown>0 then states.escapeCooldown=states.escapeCooldown-1 end
+        local me=PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local myPos=me.Player:getPosition(); local myTeamId=me.Player:getTeamId()
+        local closestPlayer,closestDistance=nil,math.huge
+        local players=PlayerManager:getPlayers() or {}
+        states.auraTimerMs=states.auraTimerMs+50
+        if states.auraTimerMs>=states.auraNextDelay then
+            for _,playerw in pairs(players) do
+                if playerw and playerw~=me and playerw.Player and playerw.Player:getTeamId()~=myTeamId then
+                    local pPos=playerw:getPosition()
+                    local dx,dy,dz=pPos.x-myPos.x,pPos.y-myPos.y,pPos.z-myPos.z
+                    local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
+                    if dist<=5.55 then
+                        local entityIda=playerw.entityId
+                        local rPos=pos(math.floor(pPos.x),math.floor(pPos.y),math.floor(pPos.z))
+                        if Attack then pcall(function() Attack(entityIda,rPos) end) end
+                    end
+                end
+            end
+            states.auraTimerMs=0; states.auraNextDelay=math.random(480,550)
+        end
+        for _,player in pairs(players) do
+            if player~=me and player.Player and player.Player:getTeamId()~=myTeamId then
+                local pPos=player:getPosition(); local diffY=math.abs(pPos.y-myPos.y)
+                if diffY<=3.0 then
+                    local dx=pPos.x-myPos.x; local dz=pPos.z-myPos.z
+                    local dist=math.sqrt(dx*dx+dz*dz)
+                    if dist<closestDistance then closestDistance=dist; closestPlayer=player end
+                end
+            end
+        end
+        if closestPlayer and closestDistance<=6.0 then
+            local targetPos=closestPlayer:getPosition(); local targetYaw=closestPlayer.Player:getYaw()
+            local currentPos=me.Player:getPosition()
+            states.antiStuckTick=states.antiStuckTick+1
+            if states.antiStuckTick>10 then
+                if states.lastPos then
+                    local moved=math.sqrt((currentPos.x-states.lastPos.x)^2+(currentPos.z-states.lastPos.z)^2)
+                    if moved<0.3 and states.escapeCooldown<=0 then
+                        local dx=currentPos.x-targetPos.x; local dz=currentPos.z-targetPos.z
+                        local distance=math.sqrt(dx*dx+dz*dz)
+                        local newX=currentPos.x+(distance>0 and (dx/distance) or (math.random()-0.5))*4.0
+                        local newZ=currentPos.z+(distance>0 and (dz/distance) or (math.random()-0.5))*4.0
+                        if currentPos.y>2 then me.Player:setPosition(VectorUtil.newVector3(newX,currentPos.y,newZ)); states.escapeCooldown=60 end
+                    end
+                end
+                states.lastPos=currentPos; states.antiStuckTick=0
+            end
+            local heightDiff=targetPos.y-currentPos.y
+            if heightDiff>=0.8 and heightDiff<=3.5 then
+                if states.tpCooldown<=0 then
+                    local yawRad=math.rad(targetYaw)
+                    local backX=targetPos.x+math.sin(yawRad)*2.0; local backZ=targetPos.z-math.cos(yawRad)*2.0
+                    me.Player:setPosition(VectorUtil.newVector3(backX,targetPos.y,backZ)); states.tpCooldown=math.random(70,100)
+                end
+            else
+                local orbitAngles={35,-35,80,-80,120,-120,180}; local backX,backZ; local foundPath=false
+                for _,angle in ipairs(orbitAngles) do
+                    local rad=math.rad(targetYaw+angle)
+                    backX=targetPos.x+math.sin(rad)*3.0; backZ=targetPos.z-math.cos(rad)*3.0
+                    if isBlockAir(pos(backX,currentPos.y,backZ)) and isBlockAir(pos(backX,currentPos.y+1,backZ)) then foundPath=true; break end
+                end
+                if not foundPath then local rad=math.rad(targetYaw+35); backX=targetPos.x+math.sin(rad)*3.0; backZ=targetPos.z-math.cos(rad)*3.0 end
+                local diffX=backX-currentPos.x; local diffZ=backZ-currentPos.z
+                local distBack=math.sqrt(diffX*diffX+diffZ*diffZ); local dirX,dirZ,speed=0,0,0
+                if distBack>0.3 then
+                    dirX=diffX/distBack; dirZ=diffZ/distBack; speed=math.random(125,140)/100
+                    if distBack<1.0 then speed=speed*math.max(0.4,distBack) end
+                end
+                if not isBlockAir(pos(currentPos.x+dirX*1.5,currentPos.y,currentPos.z+dirZ*1.5)) then
+                    me.Player:setFloatProperty("JumpHeight",0.6); me.Player:jump()
+                    local sx=-dirZ; local sz=dirX
+                    if isBlockAir(pos(currentPos.x+sx*1.5,currentPos.y,currentPos.z+sz*1.5)) then dirX=sx; dirZ=sz
+                    else dirX=-sx; dirZ=-sz end
+                end
+                me.Player:setVelocity(VectorUtil.newVector3(dirX*speed,-0.2,dirZ*speed))
+            end
+            currentPos=me.Player:getPosition()
+            local dir=VectorUtil.sub3(targetPos,currentPos)
+            local tYaw=math.atan2(dir.x,dir.z)/math.pi*-180
+            local calc=math.sqrt(dir.x*dir.x+dir.z*dir.z)
+            local tPitch=-math.atan2(dir.y+1.5,calc)/math.pi*180
+            local cYaw=me.Player.rotationYaw; local cPitch=me.Player.rotationPitch
+            local dYaw=tYaw-cYaw
+            if dYaw>180 then dYaw=dYaw-360 end; if dYaw<-180 then dYaw=dYaw+360 end
+            local sf=math.random(15,40)/100
+            me.Player.rotationYaw=cYaw+dYaw*sf; me.Player.rotationPitch=cPitch+(tPitch-cPitch)*sf
+        end
+    end,50,-1)
+end
+function Gmpanel.disableAimBackV2()
+    states.tpCooldown=0; states.auraTimerMs=0; states.antiStuckTick=0; states.escapeCooldown=0
+    if activeTimers["AimBack 2.0"] then LuaTimer:cancel(activeTimers["AimBack 2.0"]); activeTimers["AimBack 2.0"]=nil end
+end
+states.antiGravityY=nil
+states.placedIceBlocks={}
+function Gmpanel.saveAntiGravityY()
+    local me=PlayerManager:getClientPlayer()
+    if me and me.Player then
+        states.antiGravityY=math.floor(me.Player:getPosition().y)-2
+        UIHelper.showToast("^00FF00[+] Altura Fijada en: "..states.antiGravityY)
+        playSound("random.orb",1.2)
+        if ScaffoldSaveButton then
+            ScaffoldSaveButton:SetBackgroundColor({0,0.4,0,0.9})
+            LuaTimer:schedule(function() if ScaffoldSaveButton then ScaffoldSaveButton:SetBackgroundColor({0.2,0.2,0.2,0.9}) end end,500)
+        end
+    end
+end
+function Gmpanel.enableAntiGravity()
+    if not states.antiGravityY then
+        UIHelper.showToast("^FF0000[!] Error: Primero 'Fijar Altura' abajo")
+        states["AntiGravity"]=false; updateButtonAppearance(ScaffoldButton,false); return
+    end
+    activeTimers["AntiGravity"]=LuaTimer:scheduleTimer(function()
+        local me=PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local pPos=me.Player:getPosition(); local baseY=states.antiGravityY
+        if pPos.y<(baseY+1.0) then return end
+        for xOff=-1,2 do for zOff=-1,2 do
+            local bPos=VectorUtil.newVector3(math.floor(pPos.x)+xOff,baseY,math.floor(pPos.z)+zOff)
+            local key=bPos.x..","..bPos.y..","..bPos.z
+            if not states.placedIceBlocks[key] and isBlockAir(bPos) then
+                states.placedIceBlocks[key]=true
+                pcall(function() EngineWorld:setBlock(bPos,20) end)
+                LuaTimer:schedule(function() pcall(function() EngineWorld:setBlock(bPos,0) end); states.placedIceBlocks[key]=nil end,3000)
+            end
+        end end
+    end,10,-1)
+end
+function Gmpanel.disableAntiGravity()
+    if activeTimers["AntiGravity"] then LuaTimer:cancel(activeTimers["AntiGravity"]); activeTimers["AntiGravity"]=nil end
+end
+function Gmpanel.enableTracer()
+    activeTimers["Tracer"]=LuaTimer:scheduleTimer(function()
+        local me=PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local myTeamId=me.Player:getTeamId(); me.Player:deleteAllGuideArrow()
+        for _,c_player in pairs(PlayerManager:getPlayers()) do
+            if c_player~=me and c_player.Player and c_player.Player:getTeamId()~=myTeamId then
+                me.Player:addGuideArrow(c_player:getPosition())
+            end
+        end
+    end,100,-1)
+end
+function Gmpanel.disableTracer()
+    local me=PlayerManager:getClientPlayer()
+    if me and me.Player then me.Player:deleteAllGuideArrow() end
+end
+function Gmpanel.enableAntiKnockback()
+    states.lastHealth=nil; states.lastPosition=nil
+    activeTimers["AntiKnockBack"]=LuaTimer:scheduleTimer(function()
+        local me=PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local currentHealth=me.Player:getHealth(); local currentPosition=me.Player:getPosition()
+        if states.lastHealth and currentHealth<states.lastHealth and states.lastPosition then
+            me.Player:setPosition(states.lastPosition)
+        end
+        states.lastHealth=currentHealth; states.lastPosition=currentPosition
+    end,10,-1)
+end
+function Gmpanel.disableAntiKnockback()
+    if activeTimers["AntiKnockBack"] then LuaTimer:cancel(activeTimers["AntiKnockBack"]); activeTimers["AntiKnockBack"]=nil end
+end
+function Gmpanel.enableAntiVoid()
+    states.antiVoidPos=nil
+    activeTimers["AntiVoid"]=LuaTimer:scheduleTimer(function()
+        local player=PlayerManager:getClientPlayer().Player
+        if player.onGround then
+            states.antiVoidPos=player:getPosition()
+        elseif states.antiVoidPos and player:getPosition().y<=1 then
+            player.noClip=true
+            player:setPosition(VectorUtil.newVector3(states.antiVoidPos.x,states.antiVoidPos.y+2,states.antiVoidPos.z))
+            LuaTimer:schedule(function() player.noClip=false end,100)
+        end
+    end,10,-1)
+end
+function Gmpanel.disableAntiVoid()
+    if activeTimers["AntiVoid"] then LuaTimer:cancel(activeTimers["AntiVoid"]); activeTimers["AntiVoid"]=nil end
+end
+function Gmpanel.saveTP() local p=PlayerManager:getClientPlayer(); if p then savedPositions.saveTP=p.Player:getPosition(); UIHelper.showToast("^00FF00Guardado!"); playSound("random.orb") end end
+function Gmpanel.backTP() local p=PlayerManager:getClientPlayer(); if p and savedPositions.saveTP then p.Player:setPosition(savedPositions.saveTP); UIHelper.showToast("^00FF00Teleport!"); playSound("random.orb") end end
+states.ap_tpCooldown=0
+states.ap_auraTimerMs=0
+states.ap_auraNextDelay=math.random(480,550)
+states.ap_antiStuckTick=0
+states.ap_escapeCooldown=0
+states.ap_lastPos=nil
+states.ap_lockedTarget=nil
+states.ap_lockedId=nil
+states.ap_jumpCooldown=0
+states.ap_strafeDir=1
+states.ap_targetFailMs=0
+states.ap_lastDist=nil
+states.ap_jumpState="idle"
+states.ap_jumpTargetY=nil
+states.ap_lastPlayerPos=nil
+states.ap_stuckFrames=0
+states.ap_bfsPath=nil
+states.ap_bfsStep=1
+states.ap_bfsTick=0
+states.ap_bfsTargetId=nil
+function Gmpanel.enableAutoPlay()
+    local function dist2D(a,b)
+        local dx=a.x-b.x; local dz=a.z-b.z
+        return math.sqrt(dx*dx+dz*dz)
+    end
+    local function isFreeAt(bx,by,bz)
+        return isBlockAir(pos(bx,by,bz))
+    end
+    local function cellWalkable(cx,cy,nx,nz)
+        local flY=math.floor(cy)
+        local f0=isFreeAt(nx,flY,nz)
+        local f1=isFreeAt(nx,flY+1,nz)
+        local f2=isFreeAt(nx,flY+2,nz)
+        if f0 and f1 then return "free" end
+        if not f0 and f1 and f2 then return "jump1" end
+        if not f0 and not f1 and f2 then return "jump2" end
+        return "wall"
+    end
+    local function hasGroundBelow(bx,startY,bz,maxDown)
+        maxDown=maxDown or 5
+        local checkY=math.floor(startY)
+        for i=0,maxDown do
+            local groundY=checkY-i-1
+            local groundSolid=not isFreeAt(bx,groundY,bz)
+            local spaceY0=isFreeAt(bx,groundY+1,bz)
+            local spaceY1=isFreeAt(bx,groundY+2,bz)
+            if groundSolid and spaceY0 and spaceY1 then return groundY+1 end
+        end
+        return nil
+    end
+    local function isBlockedByWall(fromPos,toPos)
+        local dx=toPos.x-fromPos.x
+        local dy=toPos.y-fromPos.y
+        local dz=toPos.z-fromPos.z
+        for t=1,4 do
+            local frac=t/5.0
+            local mx=math.floor(fromPos.x+dx*frac)
+            local my=math.floor(fromPos.y+dy*frac)
+            local mz=math.floor(fromPos.z+dz*frac)
+            if not isFreeAt(mx,my,mz) then return true end
+        end
+        return false
+    end
+    local function findGroundedOrbit(targetPos,targetYaw,myPos,orbitDist)
+        local angles={0,30,-30,60,-60,90,-90,120,-120,150,-150,180}
+        for _,angle in ipairs(angles) do
+            local rad=math.rad(targetYaw+angle)
+            local bx=targetPos.x+math.sin(rad)*orbitDist
+            local bz=targetPos.z-math.cos(rad)*orbitDist
+            local groundY=hasGroundBelow(bx,targetPos.y,bz,5)
+            if groundY then return bx,groundY,bz end
+        end
+        return targetPos.x,targetPos.y,targetPos.z
+    end
+    local function bfsPath(startX,startZ,goalX,goalZ,floorY,maxSteps)
+        maxSteps=maxSteps or 300
+        local sx=math.floor(startX); local sz=math.floor(startZ)
+        local gx=math.floor(goalX); local gz=math.floor(goalZ)
+        if sx==gx and sz==gz then return {{x=gx,z=gz,action="move"}} end
+        local dirs={{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}}
+        local visited={}; local queue={}; local parent={}; local nodeAct={}
+        local function key(x,z) return x..","..z end
+        visited[key(sx,sz)]=true
+        table.insert(queue,{x=sx,z=sz})
+        local found=false; local steps=0
+        while #queue>0 and steps<maxSteps do
+            local cur=table.remove(queue,1); steps=steps+1
+            for _,d in ipairs(dirs) do
+                local nx=cur.x+d[1]; local nz=cur.z+d[2]; local nk=key(nx,nz)
+                if not visited[nk] then
+                    local action=nil
+                    if d[1]~=0 and d[2]~=0 then
+                        local wa=cellWalkable(cur.x,floorY,cur.x+d[1],cur.z)
+                        local wb=cellWalkable(cur.x,floorY,cur.x,cur.z+d[2])
+                        local wc=cellWalkable(cur.x,floorY,nx,nz)
+                        if (wa=="free" or wa=="jump1") and (wb=="free" or wb=="jump1") and wc~="wall" then action=wc end
+                    else
+                        local wc=cellWalkable(cur.x,floorY,nx,nz)
+                        if wc~="wall" then action=wc end
+                    end
+                    if action then
+                        visited[nk]=true; parent[nk]={x=cur.x,z=cur.z}; nodeAct[nk]=action
+                        if nx==gx and nz==gz then found=true; break end
+                        table.insert(queue,{x=nx,z=nz})
+                    end
+                end
+            end
+            if found then break end
+        end
+        if not found then return nil end
+        local path={}; local cx,cz=gx,gz; local ck=key(cx,cz)
+        while ck~=key(sx,sz) do
+            table.insert(path,1,{x=cx,z=cz,action=nodeAct[ck] or "move"})
+            local p=parent[ck]; if not p then return nil end
+            cx=p.x; cz=p.z; ck=key(cx,cz)
+        end
+        return path
+    end
+    local function bfsDirToNext(myX,myZ,myY,path,stepIdx)
+        if not path or #path==0 then return nil,nil,stepIdx,nil end
+        while stepIdx<=#path do
+            local cell=path[stepIdx]
+            local dx=(cell.x+0.5)-myX; local dz=(cell.z+0.5)-myZ
+            local d=math.sqrt(dx*dx+dz*dz)
+            if d<0.75 then
+                stepIdx=stepIdx+1
+            else
+                local chk=cellWalkable(myX,myY,cell.x,cell.z)
+                if chk=="wall" then return nil,nil,stepIdx,"blocked" end
+                return dx/d,dz/d,stepIdx,chk
+            end
+        end
+        return nil,nil,stepIdx,nil
+    end
+    local function minimalBackstep(cp,cy,escX,escZ)
+        local flY=math.floor(cy)
+        local steps={0.5,1.0,1.5,2.0,2.5}
+        for _,dist in ipairs(steps) do
+            local nx=cp.x+escX*dist
+            local nz=cp.z+escZ*dist
+            local inx=math.floor(nx); local inz=math.floor(nz)
+            if isFreeAt(inx,flY,inz) and isFreeAt(inx,flY+1,inz) then
+                local groundY=hasGroundBelow(nx,flY,nz,3)
+                if groundY then return nx,groundY,nz end
+            end
+        end
+        return nil,nil,nil
+    end
+    local function smartEvade(cp,cy,dirX,dirZ,playerObj,onGround)
+        local frontSt=cellWalkable(cp.x,cy,math.floor(cp.x+dirX*1.1),math.floor(cp.z+dirZ*1.1))
+        if frontSt=="free" then states.ap_stuckFrames=0; return dirX,dirZ,"ok" end
+        if frontSt=="jump1" and onGround then
+            playerObj:setFloatProperty("JumpHeight",math.random(55,65)/100)
+            playerObj:jump(); states.ap_stuckFrames=0; return dirX,dirZ,"jumped1"
+        end
+        if frontSt=="jump2" and onGround then
+            playerObj:setFloatProperty("JumpHeight",math.random(80,95)/100)
+            playerObj:jump(); states.ap_stuckFrames=0; return dirX,dirZ,"jumped2"
+        end
+        states.ap_stuckFrames=states.ap_stuckFrames+1
+        local rX,rZ=-dirZ,dirX
+        local lX,lZ=dirZ,-dirX
+        local ordered
+        if states.ap_strafeDir>=0 then
+            ordered={{dirX+rX,dirZ+rZ},{dirX+lX,dirZ+lZ},{rX,rZ},{lX,lZ},{-dirX+rX,-dirZ+rZ},{-dirX+lX,-dirZ+lZ},{-dirX,-dirZ}}
+        else
+            ordered={{dirX+lX,dirZ+lZ},{dirX+rX,dirZ+rZ},{lX,lZ},{rX,rZ},{-dirX+lX,-dirZ+lZ},{-dirX+rX,-dirZ+rZ},{-dirX,-dirZ}}
+        end
+        for _,c in ipairs(ordered) do
+            local nm=math.sqrt(c[1]*c[1]+c[2]*c[2])
+            if nm>0.01 then
+                local ndX=c[1]/nm; local ndZ=c[2]/nm
+                local st=cellWalkable(cp.x,cy,math.floor(cp.x+ndX*1.1),math.floor(cp.z+ndZ*1.1))
+                if st=="free" then
+                    if states.ap_stuckFrames>3 then states.ap_strafeDir=-states.ap_strafeDir; states.ap_stuckFrames=0 end
+                    return ndX,ndZ,"evaded"
+                elseif st=="jump1" and onGround then
+                    playerObj:setFloatProperty("JumpHeight",math.random(55,65)/100); playerObj:jump()
+                    states.ap_stuckFrames=0; return ndX,ndZ,"evaded_jump1"
+                elseif st=="jump2" and onGround then
+                    playerObj:setFloatProperty("JumpHeight",math.random(80,95)/100); playerObj:jump()
+                    states.ap_stuckFrames=0; return ndX,ndZ,"evaded_jump2"
+                end
+            end
+        end
+        if onGround then playerObj:setFloatProperty("JumpHeight",1.1); playerObj:jump() end
+        states.ap_stuckFrames=0; states.ap_strafeDir=-states.ap_strafeDir
+        return -dirX*0.6,-dirZ*0.6,"stuck"
+    end
+    local function clearanceDir(cp,cy)
+        local bestDirX,bestDirZ=0,1; local bestClear=0
+        for a=0,15 do
+            local rad=a*math.pi*2/16
+            local dx=math.sin(rad); local dz=math.cos(rad); local clear=0
+            for step=1,4 do
+                local st=cellWalkable(cp.x,cy,math.floor(cp.x+dx*step),math.floor(cp.z+dz*step))
+                if st=="free" or st=="jump1" then clear=clear+1 else break end
+            end
+            if clear>bestClear then bestClear=clear; bestDirX=dx; bestDirZ=dz end
+        end
+        return bestDirX,bestDirZ
+    end
+    local function isEnemyFallen(myPos,pPos)
+        if (myPos.y-pPos.y)>8 then return true end
+        if pPos.y<2 then return true end
+        return false
+    end
+    activeTimers["AutoPlay"]=LuaTimer:scheduleTimer(function()
+        if states.ap_tpCooldown>0 then states.ap_tpCooldown=states.ap_tpCooldown-1 end
+        if states.ap_escapeCooldown>0 then states.ap_escapeCooldown=states.ap_escapeCooldown-1 end
+        if states.ap_jumpCooldown>0 then states.ap_jumpCooldown=states.ap_jumpCooldown-1 end
+        states.ap_bfsTick=states.ap_bfsTick+1
+        local me=PlayerManager:getClientPlayer()
+        if not me or not me.Player then return end
+        local myPos=me.Player:getPosition()
+        local myTeamId=me.Player:getTeamId()
+        local players=PlayerManager:getPlayers() or {}
+        local onGround=me.Player.onGround
+        states.ap_auraTimerMs=states.ap_auraTimerMs+50
+        if states.ap_auraTimerMs>=states.ap_auraNextDelay then
+            for _,playerw in pairs(players) do
+                if playerw and playerw~=me and playerw.Player and playerw.Player:getTeamId()~=myTeamId then
+                    local pPos=playerw:getPosition()
+                    local dx=pPos.x-myPos.x; local dy=pPos.y-myPos.y; local dz=pPos.z-myPos.z
+                    local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
+                    if dist<=5.55 then
+                        local entityIda=playerw.entityId
+                        local rPos=pos(math.floor(pPos.x),math.floor(pPos.y),math.floor(pPos.z))
+                        if Attack then pcall(function() Attack(entityIda,rPos) end) end
+                    end
+                end
+            end
+            states.ap_auraTimerMs=0; states.ap_auraNextDelay=math.random(480,550)
+        end
+        local bestScore=math.huge; local bestPlayer=nil
+        local nearbyBest=math.huge; local nearbyPlayer=nil
+        for _,player in pairs(players) do
+            if player~=me and player.Player and player.Player:getTeamId()~=myTeamId then
+                local pPos=player:getPosition()
+                if not isEnemyFallen(myPos,pPos) then
+                    local d2=dist2D(myPos,pPos); local diffY=pPos.y-myPos.y; local absY=math.abs(diffY)
+                    local w
+                    if absY<=2.0 then w=0.1
+                    elseif diffY>2.0 and diffY<=5.0 then w=1.2
+                    elseif diffY>5.0 then w=4.0
+                    elseif diffY<-2.0 and diffY>=-5.0 then w=1.8
+                    else w=5.0 end
+                    local score=d2+w*absY
+                    if score<bestScore then bestScore=score; bestPlayer=player end
+                    if d2<=8.0 and score<nearbyBest then nearbyBest=score; nearbyPlayer=player end
+                end
+            end
+        end
+        local targetPlayer,targetDist2D
+        if nearbyPlayer then
+            targetPlayer=nearbyPlayer; targetDist2D=dist2D(myPos,nearbyPlayer:getPosition())
+            states.ap_lockedTarget=nearbyPlayer; states.ap_lockedId=nearbyPlayer.entityId; states.ap_targetFailMs=0
+        else
+            if bestPlayer then
+                local newId=bestPlayer.entityId
+                if states.ap_lockedId~=newId then
+                    states.ap_tpCooldown=0; states.ap_antiStuckTick=0
+                    states.ap_targetFailMs=0; states.ap_lastDist=nil
+                    states.ap_jumpState="idle"; states.ap_bfsPath=nil
+                    states.ap_bfsStep=1; states.ap_bfsTick=0
+                    states.ap_bfsTargetId=newId; states.ap_stuckFrames=0
+                end
+                states.ap_lockedTarget=bestPlayer; states.ap_lockedId=newId
+            end
+            targetPlayer=states.ap_lockedTarget
+            if targetPlayer then targetDist2D=dist2D(myPos,targetPlayer:getPosition()) end
+        end
+        if not targetPlayer or not targetPlayer.Player then return end
+        local tpCheck=targetPlayer:getPosition()
+        if isEnemyFallen(myPos,tpCheck) then
+            if bestPlayer and bestPlayer~=targetPlayer then
+                states.ap_lockedTarget=bestPlayer; states.ap_lockedId=bestPlayer.entityId
+                targetPlayer=bestPlayer; states.ap_bfsPath=nil; states.ap_bfsStep=1
+            else return end
+        end
+        local targetPos=targetPlayer:getPosition()
+        local targetYaw=targetPlayer.Player:getYaw()
+        local currentPos=me.Player:getPosition()
+        local heightDiff=targetPos.y-currentPos.y
+        if targetDist2D and targetDist2D>8.0 then
+            states.ap_targetFailMs=states.ap_targetFailMs+50
+            if states.ap_lastDist and (states.ap_lastDist-targetDist2D)>0.5 then states.ap_targetFailMs=0 end
+            states.ap_lastDist=targetDist2D
+            if states.ap_targetFailMs>=4000 then
+                local altScore=math.huge; local altPlayer=nil
+                for _,player in pairs(players) do
+                    if player~=me and player.Player and player.Player:getTeamId()~=myTeamId and player.entityId~=states.ap_lockedId then
+                        local pPos=player:getPosition()
+                        if not isEnemyFallen(myPos,pPos) then
+                            local d2=dist2D(myPos,pPos); local dY=math.abs(pPos.y-myPos.y)
+                            local sc=d2+(dY<=2 and 0.1 or (dY<=5 and 1.2 or 4.0))*dY
+                            if sc<altScore then altScore=sc; altPlayer=player end
+                        end
+                    end
+                end
+                if altPlayer then
+                    states.ap_lockedTarget=altPlayer; states.ap_lockedId=altPlayer.entityId
+                    targetPlayer=altPlayer; targetPos=altPlayer:getPosition()
+                    targetYaw=altPlayer.Player:getYaw(); targetDist2D=dist2D(myPos,targetPos)
+                    heightDiff=targetPos.y-currentPos.y
+                end
+                states.ap_targetFailMs=0; states.ap_lastDist=nil
+                states.ap_jumpState="idle"; states.ap_bfsPath=nil
+                states.ap_bfsStep=1; states.ap_bfsTick=0
+            end
+        else
+            states.ap_targetFailMs=0; states.ap_lastDist=nil
+        end
+        do
+            local dir=VectorUtil.sub3(targetPos,currentPos)
+            local tYaw=math.atan2(dir.x,dir.z)/math.pi*-180
+            local hd=math.sqrt(dir.x*dir.x+dir.z*dir.z)
+            local tPitch=-math.atan2(dir.y+1.5,hd)/math.pi*180
+            local cYaw=me.Player.rotationYaw; local cPitch=me.Player.rotationPitch
+            local dYaw=tYaw-cYaw
+            if dYaw>180 then dYaw=dYaw-360 end; if dYaw<-180 then dYaw=dYaw+360 end
+            local sf=(targetDist2D and targetDist2D>8.0) and math.random(10,18)/100 or math.random(18,38)/100
+            me.Player.rotationYaw=cYaw+dYaw*sf; me.Player.rotationPitch=cPitch+(tPitch-cPitch)*sf
+        end
+        if targetDist2D and targetDist2D>8.0 then
+            local dx=targetPos.x-currentPos.x; local dz=targetPos.z-currentPos.z
+            local hd=math.sqrt(dx*dx+dz*dz)
+            local dirX,dirZ=0,0
+            if hd>0.1 then dirX=dx/hd; dirZ=dz/hd end
+            local needRecalc=(states.ap_bfsPath==nil) or (states.ap_bfsTick>=6) or (states.ap_bfsTargetId~=states.ap_lockedId)
+            if needRecalc then
+                states.ap_bfsTick=0; states.ap_bfsTargetId=states.ap_lockedId
+                local maxSteps=math.min(500,math.floor(hd*8))
+                local path=bfsPath(currentPos.x,currentPos.z,targetPos.x,targetPos.z,currentPos.y,maxSteps)
+                if path and #path>0 then
+                    states.ap_bfsPath=path; states.ap_bfsStep=1; states.ap_stuckFrames=0
+                else
+                    states.ap_bfsPath=nil
+                end
+            end
+            if states.ap_bfsPath then
+                local bdX,bdZ,nextStep,action=bfsDirToNext(currentPos.x,currentPos.z,currentPos.y,states.ap_bfsPath,states.ap_bfsStep)
+                if action=="blocked" then
+                    states.ap_bfsPath=nil; states.ap_bfsTick=999
+                elseif bdX and bdZ then
+                    states.ap_bfsStep=nextStep; dirX=bdX; dirZ=bdZ
+                    if action=="jump1" and onGround then
+                        me.Player:setFloatProperty("JumpHeight",math.random(55,65)/100); me.Player:jump()
+                    elseif action=="jump2" and onGround then
+                        me.Player:setFloatProperty("JumpHeight",math.random(80,95)/100); me.Player:jump()
+                        states.ap_bfsPath=nil
+                    end
+                else
+                    states.ap_bfsPath=nil
+                end
+            end
+            if not states.ap_bfsPath then
+                local cdX,cdZ=clearanceDir(currentPos,currentPos.y)
+                local mx=dirX*0.6+cdX*0.4; local mz=dirZ*0.6+cdZ*0.4
+                local mn=math.sqrt(mx*mx+mz*mz)
+                if mn>0.01 then mx=mx/mn; mz=mz/mn end
+                local nX,nZ=smartEvade(currentPos,currentPos.y,mx,mz,me.Player,onGround)
+                dirX=nX; dirZ=nZ
+            end
+            if heightDiff>1.5 then
+                if states.ap_jumpState=="idle" then states.ap_jumpState="approaching" end
+                if states.ap_jumpState=="approaching" then
+                    if hd<=10.0 and states.ap_jumpCooldown<=0 then
+                        local jp=math.max(0.6,math.min(heightDiff*0.55,3.0))
+                        me.Player:setFloatProperty("JumpHeight",jp); me.Player:jump()
+                        states.ap_jumpCooldown=math.random(14,22)+math.floor(heightDiff*0.5)
+                        states.ap_jumpTargetY=targetPos.y; states.ap_jumpState="jumping"
+                    else
+                        me.Player:setVelocity(VectorUtil.newVector3(dirX*1.10,0.0,dirZ*1.10))
+                    end
+                elseif states.ap_jumpState=="jumping" then
+                    me.Player:setVelocity(VectorUtil.newVector3(dirX*1.10,0.0,dirZ*1.10))
+                    if onGround then states.ap_jumpState="landed"
+                    elseif states.ap_jumpTargetY and currentPos.y>=(states.ap_jumpTargetY+0.5) then states.ap_jumpState="landed" end
+                elseif states.ap_jumpState=="landed" then
+                    states.ap_jumpState="idle"; me.Player:setFloatProperty("JumpHeight",0.4)
+                end
+            else
+                states.ap_jumpState="idle"
+                me.Player:setVelocity(VectorUtil.newVector3(dirX*1.10,-0.15,dirZ*1.10))
+            end
+            return
+        end
+        states.ap_jumpState="idle"; states.ap_bfsPath=nil
+        states.ap_antiStuckTick=states.ap_antiStuckTick+1
+        if states.ap_antiStuckTick>3 then
+            if states.ap_lastPos then
+                local moved=math.sqrt((currentPos.x-states.ap_lastPos.x)^2+(currentPos.z-states.ap_lastPos.z)^2)
+                if moved<0.25 and states.ap_escapeCooldown<=0 then
+                    local ex=currentPos.x-targetPos.x; local ez=currentPos.z-targetPos.z
+                    local ed=math.sqrt(ex*ex+ez*ez)
+                    local escX,escZ
+                    if ed>0 then escX=ex/ed; escZ=ez/ed else escX=math.random()-0.5; escZ=math.random()-0.5 end
+                    local st=cellWalkable(currentPos.x,currentPos.y,math.floor(currentPos.x+escX),math.floor(currentPos.z+escZ))
+                    if st=="wall" then escX,escZ=clearanceDir(currentPos,currentPos.y) end
+                    local nx,ny,nz=minimalBackstep(currentPos,currentPos.y,escX,escZ)
+                    if nx and currentPos.y>2 then
+                        me.Player:setPosition(VectorUtil.newVector3(nx,ny,nz))
+                        states.ap_escapeCooldown=40; states.ap_stuckFrames=0
+                    end
+                end
+            end
+            states.ap_lastPos=currentPos; states.ap_antiStuckTick=0
+        end
+        if targetDist2D and targetDist2D<=7.0 then
+            local wallBetween=isBlockedByWall(currentPos,targetPos)
+            if (wallBetween or (heightDiff>=0.8 and heightDiff<=3.5)) and states.ap_tpCooldown<=0 then
+                local tpx=targetPos.x
+                local tpy=targetPos.y
+                local tpz=targetPos.z
+                if isFreeAt(tpx,tpy+1,tpz) and isFreeAt(tpx,tpy+2,tpz) then
+                    me.Player:setPosition(VectorUtil.newVector3(tpx+0.4,tpy+3,tpz+0.4))
+                    states.ap_tpCooldown=math.random(70,100)
+                    return
+                end
+            end
+        end
+        if heightDiff>3.5 and states.ap_jumpCooldown<=0 then
+            local jp=math.max(0.6,math.min(heightDiff*0.55,3.0))
+            me.Player:setFloatProperty("JumpHeight",jp); me.Player:jump()
+            states.ap_jumpCooldown=math.random(10,16)+math.floor(heightDiff*0.4)
+        else
+            local wallBetween=isBlockedByWall(currentPos,targetPos)
+            local backX,backZ
+            if wallBetween then
+                local ox,oy,oz=findGroundedOrbit(targetPos,targetYaw,currentPos,3.0)
+                backX=ox; backZ=oz
+            else
+                local angles={0,30,-30,60,-60,90,-90,120,-120,150,-150,180}
+                for _,angle in ipairs(angles) do
+                    local rad=math.rad(targetYaw+angle)
+                    local bx=targetPos.x+math.sin(rad)*3.0
+                    local bz=targetPos.z-math.cos(rad)*3.0
+                    local st=cellWalkable(currentPos.x,currentPos.y,math.floor(bx),math.floor(bz))
+                    local gY=hasGroundBelow(bx,currentPos.y,bz,3)
+                    if st~="wall" and gY then backX=bx; backZ=bz; break end
+                end
+                if not backX then
+                    local rad=math.rad(targetYaw+30)
+                    backX=targetPos.x+math.sin(rad)*3.0; backZ=targetPos.z-math.cos(rad)*3.0
+                end
+            end
+            local diffX=backX-currentPos.x; local diffZ=backZ-currentPos.z
+            local distBack=math.sqrt(diffX*diffX+diffZ*diffZ)
+            local dirX,dirZ,speed=0,0,0
+            if distBack>0.3 then
+                dirX=diffX/distBack; dirZ=diffZ/distBack
+                speed=math.random(110,120)/100
+                if distBack<1.0 then speed=speed*math.max(0.4,distBack) end
+                local sadd=states.ap_strafeDir*0.07
+                local ndX=dirX+(-dirZ*sadd); local ndZ=dirZ+(dirX*sadd)
+                local nm=math.sqrt(ndX*ndX+ndZ*ndZ)
+                if nm>0 then dirX=ndX/nm; dirZ=ndZ/nm end
+                if math.random(1,90)==1 then states.ap_strafeDir=-states.ap_strafeDir end
+            end
+            local newDirX,newDirZ=smartEvade(currentPos,currentPos.y,dirX,dirZ,me.Player,onGround)
+            dirX=newDirX; dirZ=newDirZ
+            me.Player:setVelocity(VectorUtil.newVector3(dirX*speed,-0.2,dirZ*speed))
+        end
+    end,50,-1)
+end
+function Gmpanel.disableAutoPlay()
+    states.ap_tpCooldown=0; states.ap_auraTimerMs=0; states.ap_antiStuckTick=0
+    states.ap_escapeCooldown=0; states.ap_jumpCooldown=0
+    states.ap_lockedTarget=nil; states.ap_lockedId=nil; states.ap_lastPos=nil
+    states.ap_strafeDir=1; states.ap_targetFailMs=0; states.ap_lastDist=nil
+    states.ap_jumpState="idle"; states.ap_jumpTargetY=nil; states.ap_stuckFrames=0
+    states.ap_lastPlayerPos=nil; states.ap_bfsPath=nil; states.ap_bfsStep=1
+    states.ap_bfsTick=0; states.ap_bfsTargetId=nil
+    local me=PlayerManager:getClientPlayer()
+    if me and me.Player then me.Player:setFloatProperty("JumpHeight",0.4) end
+    if activeTimers["AutoPlay"] then LuaTimer:cancel(activeTimers["AutoPlay"]); activeTimers["AutoPlay"]=nil end
+end
+function toggleAutoPlay()
+    toggleHack(AutoPlayButton,"AutoPlay",Gmpanel.enableAutoPlay,Gmpanel.disableAutoPlay)
+end
+AirSpeedButton=GUIManager:createGUIWindow(GUIType.StaticText,"AirSpeedFloatingButton")
+AirSpeedButton:SetHorizontalAlignment(HorizontalAlignment.Right); AirSpeedButton:SetVerticalAlignment(VerticalAlignment.Top)
+AirSpeedButton:SetHeight({0,40}); AirSpeedButton:SetWidth({0,150}); AirSpeedButton:SetYPosition({0,10}); AirSpeedButton:SetXPosition({0,-10})
+AirSpeedButton:SetLevel(10); AirSpeedButton:SetText("Fly v2"); AirSpeedButton:SetTouchable(true); AirSpeedButton:SetBordered(true)
+AirSpeedButton:SetTextHorzAlign(HorizontalAlignment.Center); AirSpeedButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(AirSpeedButton)
+AirSpeedButton:registerEvent(GUIEvent.Click,function() toggleFlyV2() end)
+updateButtonAppearance(AirSpeedButton,false)
+HitBoxButton=GUIManager:createGUIWindow(GUIType.StaticText,"HitBoxFloatingButton")
+HitBoxButton:SetHorizontalAlignment(HorizontalAlignment.Right); HitBoxButton:SetVerticalAlignment(VerticalAlignment.Top)
+HitBoxButton:SetHeight({0,40}); HitBoxButton:SetWidth({0,150}); HitBoxButton:SetYPosition({0,10}); HitBoxButton:SetXPosition({0,-180})
+HitBoxButton:SetLevel(10); HitBoxButton:SetText("HitBox"); HitBoxButton:SetTouchable(true); HitBoxButton:SetBordered(true)
+HitBoxButton:SetTextHorzAlign(HorizontalAlignment.Center); HitBoxButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(HitBoxButton)
+HitBoxButton:registerEvent(GUIEvent.Click,function() toggleHitBox() end)
+updateButtonAppearance(HitBoxButton,false)
+SpeedButton=GUIManager:createGUIWindow(GUIType.StaticText,"SpeedFloatingButton")
+SpeedButton:SetHorizontalAlignment(HorizontalAlignment.Right); SpeedButton:SetVerticalAlignment(VerticalAlignment.Top)
+SpeedButton:SetHeight({0,40}); SpeedButton:SetWidth({0,85}); SpeedButton:SetYPosition({0,10}); SpeedButton:SetXPosition({0,-445})
+SpeedButton:SetLevel(10); SpeedButton:SetText("Speed"); SpeedButton:SetTouchable(true); SpeedButton:SetBordered(true)
+SpeedButton:SetTextHorzAlign(HorizontalAlignment.Center); SpeedButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(SpeedButton)
+SpeedButton:registerEvent(GUIEvent.Click,function() toggleSpeed() end)
+updateButtonAppearance(SpeedButton,false)
+JumpButton=GUIManager:createGUIWindow(GUIType.StaticText,"JumpFloatingButton")
+JumpButton:SetHorizontalAlignment(HorizontalAlignment.Right); JumpButton:SetVerticalAlignment(VerticalAlignment.Top)
+JumpButton:SetHeight({0,40}); JumpButton:SetWidth({0,85}); JumpButton:SetYPosition({0,10}); JumpButton:SetXPosition({0,-350})
+JumpButton:SetLevel(10); JumpButton:SetText("Jump"); JumpButton:SetTouchable(true); JumpButton:SetBordered(true)
+JumpButton:SetTextHorzAlign(HorizontalAlignment.Center); JumpButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(JumpButton)
+JumpButton:registerEvent(GUIEvent.Click,function() toggleJump() end)
+updateButtonAppearance(JumpButton,false)
+states.isKillMenuOpen=false
+KillButton=GUIManager:createGUIWindow(GUIType.StaticText,"KillFloatingButton")
+KillButton:SetHorizontalAlignment(HorizontalAlignment.Left); KillButton:SetVerticalAlignment(VerticalAlignment.Top)
+KillButton:SetHeight({0,40}); KillButton:SetWidth({0,150}); KillButton:SetYPosition({0,10}); KillButton:SetXPosition({0,350})
+KillButton:SetLevel(15); KillButton:SetText("Kill Menu ▼"); KillButton:SetTouchable(true); KillButton:SetBordered(true)
+KillButton:SetBackgroundColor({0.1,0.1,0.1,0.9})
+KillButton:SetTextHorzAlign(HorizontalAlignment.Center); KillButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(KillButton)
+AimBackButton=GUIManager:createGUIWindow(GUIType.StaticText,"AimBackSubButton")
+AimBackButton:SetHorizontalAlignment(HorizontalAlignment.Left); AimBackButton:SetVerticalAlignment(VerticalAlignment.Top)
+AimBackButton:SetHeight({0,40}); AimBackButton:SetWidth({0,150}); AimBackButton:SetYPosition({0,55}); AimBackButton:SetXPosition({0,350})
+AimBackButton:SetLevel(14); AimBackButton:SetVisible(false); AimBackButton:SetText("AimBack")
+AimBackButton:SetTouchable(true); AimBackButton:SetBordered(true)
+AimBackButton:SetTextHorzAlign(HorizontalAlignment.Center); AimBackButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(AimBackButton)
+AimBackButton:registerEvent(GUIEvent.Click,function() toggleAimBack() end)
+updateButtonAppearance(AimBackButton,false)
+ScaffoldButton=GUIManager:createGUIWindow(GUIType.StaticText,"ScaffoldSubButton")
+ScaffoldButton:SetHorizontalAlignment(HorizontalAlignment.Left); ScaffoldButton:SetVerticalAlignment(VerticalAlignment.Top)
+ScaffoldButton:SetHeight({0,40}); ScaffoldButton:SetWidth({0,150}); ScaffoldButton:SetYPosition({0,100}); ScaffoldButton:SetXPosition({0,350})
+ScaffoldButton:SetLevel(14); ScaffoldButton:SetVisible(false); ScaffoldButton:SetText("AntiGravity")
+ScaffoldButton:SetTouchable(true); ScaffoldButton:SetBordered(true)
+ScaffoldButton:SetTextHorzAlign(HorizontalAlignment.Center); ScaffoldButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(ScaffoldButton)
+ScaffoldButton:registerEvent(GUIEvent.Click,function() toggleScaffold() end)
+updateButtonAppearance(ScaffoldButton,false)
+ScaffoldSaveButton=GUIManager:createGUIWindow(GUIType.StaticText,"ScaffoldSaveBtn")
+ScaffoldSaveButton:SetHorizontalAlignment(HorizontalAlignment.Left); ScaffoldSaveButton:SetVerticalAlignment(VerticalAlignment.Top)
+ScaffoldSaveButton:SetHeight({0,30}); ScaffoldSaveButton:SetWidth({0,150}); ScaffoldSaveButton:SetYPosition({0,145}); ScaffoldSaveButton:SetXPosition({0,350})
+ScaffoldSaveButton:SetLevel(14); ScaffoldSaveButton:SetVisible(false); ScaffoldSaveButton:SetText("📍 Fijar Altura")
+ScaffoldSaveButton:SetBackgroundColor({0.2,0.2,0.2,0.9}); ScaffoldSaveButton:SetTouchable(true); ScaffoldSaveButton:SetBordered(true)
+ScaffoldSaveButton:SetTextHorzAlign(HorizontalAlignment.Center); ScaffoldSaveButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(ScaffoldSaveButton)
+ScaffoldSaveButton:registerEvent(GUIEvent.Click,function() Gmpanel.saveAntiGravityY() end)
+AimBack2Button=GUIManager:createGUIWindow(GUIType.StaticText,"AimBack2SubButton")
+AimBack2Button:SetHorizontalAlignment(HorizontalAlignment.Left); AimBack2Button:SetVerticalAlignment(VerticalAlignment.Top)
+AimBack2Button:SetHeight({0,40}); AimBack2Button:SetWidth({0,150}); AimBack2Button:SetYPosition({0,180}); AimBack2Button:SetXPosition({0,350})
+AimBack2Button:SetLevel(14); AimBack2Button:SetVisible(false); AimBack2Button:SetText("AimBack 2.0")
+AimBack2Button:SetTouchable(true); AimBack2Button:SetBordered(true)
+AimBack2Button:SetTextHorzAlign(HorizontalAlignment.Center); AimBack2Button:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(AimBack2Button)
+AimBack2Button:registerEvent(GUIEvent.Click,function() toggleAimBackV2() end)
+updateButtonAppearance(AimBack2Button,false)
+KillButton:registerEvent(GUIEvent.Click,function()
+    states.isKillMenuOpen=not states.isKillMenuOpen
+    if states.isKillMenuOpen then
+        KillButton:SetBackgroundColor({0.5,0,0,1}); KillButton:SetText("Kill Menu ▲")
+        Show(AimBackButton); Show(ScaffoldButton); Show(ScaffoldSaveButton); Show(AimBack2Button)
+    else
+        KillButton:SetBackgroundColor({0.1,0.1,0.1,0.9}); KillButton:SetText("Kill Menu ▼")
+        Hide(AimBackButton); Hide(ScaffoldButton); Hide(ScaffoldSaveButton); Hide(AimBack2Button)
+    end
+    playSound("random.click",1.0)
+end)
+states.isFovMenuOpen=false
+FovMenuButton=GUIManager:createGUIWindow(GUIType.StaticText,"FovMenuFloatingButton")
+FovMenuButton:SetHorizontalAlignment(HorizontalAlignment.Left); FovMenuButton:SetVerticalAlignment(VerticalAlignment.Top)
+FovMenuButton:SetHeight({0,40}); FovMenuButton:SetWidth({0,150}); FovMenuButton:SetYPosition({0,10}); FovMenuButton:SetXPosition({0,510})
+FovMenuButton:SetLevel(15); FovMenuButton:SetText("Fov Menu ▼"); FovMenuButton:SetTouchable(true); FovMenuButton:SetBordered(true)
+FovMenuButton:SetBackgroundColor({0.1,0.1,0.1,0.9})
+FovMenuButton:SetTextHorzAlign(HorizontalAlignment.Center); FovMenuButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(FovMenuButton)
+Fov2xButton=GUIManager:createGUIWindow(GUIType.StaticText,"Fov2xSubButton")
+Fov2xButton:SetHorizontalAlignment(HorizontalAlignment.Left); Fov2xButton:SetVerticalAlignment(VerticalAlignment.Top)
+Fov2xButton:SetHeight({0,40}); Fov2xButton:SetWidth({0,150}); Fov2xButton:SetYPosition({0,55}); Fov2xButton:SetXPosition({0,510})
+Fov2xButton:SetLevel(14); Fov2xButton:SetVisible(false); Fov2xButton:SetText("Fov 2x")
+Fov2xButton:SetTouchable(true); Fov2xButton:SetBordered(true)
+Fov2xButton:SetTextHorzAlign(HorizontalAlignment.Center); Fov2xButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(Fov2xButton)
+Fov2xButton:registerEvent(GUIEvent.Click,function() toggleFov2x() end)
+updateButtonAppearance(Fov2xButton,false)
+AutoClickButton=GUIManager:createGUIWindow(GUIType.StaticText,"AutoClickSubButton")
+AutoClickButton:SetHorizontalAlignment(HorizontalAlignment.Left); AutoClickButton:SetVerticalAlignment(VerticalAlignment.Top)
+AutoClickButton:SetHeight({0,40}); AutoClickButton:SetWidth({0,150}); AutoClickButton:SetYPosition({0,100}); AutoClickButton:SetXPosition({0,510})
+AutoClickButton:SetLevel(14); AutoClickButton:SetVisible(false); AutoClickButton:SetText("AutoClicker")
+AutoClickButton:SetTouchable(true); AutoClickButton:SetBordered(true)
+AutoClickButton:SetTextHorzAlign(HorizontalAlignment.Center); AutoClickButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(AutoClickButton)
+AutoClickButton:registerEvent(GUIEvent.Click,function() toggleAutoClicker() end)
+updateButtonAppearance(AutoClickButton,false)
+AutoPlayButton=GUIManager:createGUIWindow(GUIType.StaticText,"AutoPlayFloatingButton")
+AutoPlayButton:SetHorizontalAlignment(HorizontalAlignment.Left); AutoPlayButton:SetVerticalAlignment(VerticalAlignment.Top)
+AutoPlayButton:SetHeight({0,45}); AutoPlayButton:SetWidth({0,150}); AutoPlayButton:SetYPosition({0,150}); AutoPlayButton:SetXPosition({0,510})
+AutoPlayButton:SetLevel(14); AutoPlayButton:SetVisible(false); AutoPlayButton:SetText("🤖 AutoPlay")
+AutoPlayButton:SetTouchable(true); AutoPlayButton:SetBordered(true)
+AutoPlayButton:SetBackgroundColor({0,0,0,0.85})
+AutoPlayButton:SetTextHorzAlign(HorizontalAlignment.Center); AutoPlayButton:SetTextVertAlign(VerticalAlignment.Center)
+GUISystem.Instance():GetRootWindow():AddChildWindow(AutoPlayButton)
+AutoPlayButton:registerEvent(GUIEvent.Click,function() toggleAutoPlay() end)
+updateButtonAppearance(AutoPlayButton,false)
+FovMenuButton:registerEvent(GUIEvent.Click,function()
+    states.isFovMenuOpen=not states.isFovMenuOpen
+    if states.isFovMenuOpen then
+        FovMenuButton:SetBackgroundColor({0.5,0,0,1}); FovMenuButton:SetText("Fov Menu ▲")
+        Show(Fov2xButton); Show(AutoClickButton); Show(AutoPlayButton)
+    else
+        FovMenuButton:SetBackgroundColor({0.1,0.1,0.1,0.9}); FovMenuButton:SetText("Fov Menu ▼")
+        Hide(Fov2xButton); Hide(AutoClickButton); Hide(AutoPlayButton)
+    end
+    playSound("random.click",1.0)
+end)
+local function activateAutoFeatures()
+    states["Tracer"]=true; Gmpanel.enableTracer()
+    states["AntiVoid"]=true; Gmpanel.enableAntiVoid()
+    states["AntiKnockBack"]=true; Gmpanel.enableAntiKnockback()
+    UIHelper.showToast(green.."Auto-features ACTIVADOS")
+end
+LuaTimer:schedule(function() activateAutoFeatures() end,100)
