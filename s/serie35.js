@@ -2,7 +2,7 @@ window.moviesList = window.moviesList || [];
 
 window.moviesList.push({
     id: "s35",
-    globalid: "34",
+    globalid: "36",
     title: "Mortal Kombat II",
     year: "2025",
     genre: "Acción, Fantasía",
