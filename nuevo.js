@@ -15,7 +15,7 @@ const NEW_CONTENT_CONFIG = [
     { id: 'p122', type: 'cam' },
     { id: '134', type: 'cam' },
     { id: 'p111', type: 'cam' },
-    { id: 'p118', type: 'cam' },
+    { id: 'x', type: 'cam' },
     { id: 'p120', type: 'cam' },
     { id: 'p121', type: 'cam' },
     { id: 'p126', type: 'cam' }
