@@ -43,7 +43,8 @@ window.seriesList.push({
                 { episode: 2, video: "https://auraflix.seekplays.com/#8anu6" },
                 { episode: 3, video: "https://auraflix.seekplays.com/#ip9lq" },
                 { episode: 4, video: "https://auraflix.seekplays.com/#k9dwd" },
-                { episode: 5, video: "https://auraflix.seekplays.com/#lbf1o" }
+                { episode: 5, video: "https://auraflix.seekplays.com/#lbf1o" },
+                { episode: 6, video: "https://auraflix.seekplays.com/#swlgc" }
             ]
         }
     ]
