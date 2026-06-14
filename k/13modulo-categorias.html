@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CHILY FRUTAS — Módulo Categorías</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:#f3f4f6;color:#111827;font-size:13px;line-height:1.5;}
+  a{color:inherit;text-decoration:none;}
+  .layout{display:flex;min-height:100vh;}
+  .sidebar{width:220px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:10;}
+  .sidebar-logo{padding:16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:36px;height:36px;background:#16a34a;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+  .logo-text{font-size:13px;font-weight:700;color:#111827;}
+  .logo-sub{font-size:10px;color:#6b7280;}
+  .sidebar-section{padding:12px 0 4px;}
+  .sidebar-label{padding:6px 16px;font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase;}
+  .sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:12px;color:#374151;border-left:3px solid transparent;}
+  .sidebar-item.active{background:#f0fdf4;color:#16a34a;font-weight:600;border-left-color:#16a34a;}
+  .sidebar-footer{margin-top:auto;padding:12px 16px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;}
+  .header{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;}
+  .breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280;}
+  .breadcrumb span{color:#111827;font-weight:600;}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;}
+  .btn-primary{background:#16a34a;color:#fff;}
+  .btn-secondary{background:#fff;color:#374151;border:1px solid #d1d5db;}
+  .avatar{width:32px;height:32px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;}
+  .main{margin-left:220px;display:flex;flex-direction:column;min-height:100vh;}
+  .content{padding:20px 24px;flex:1;}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .page-title{font-size:18px;font-weight:700;color:#111827;}
+  .page-sub{font-size:12px;color:#6b7280;margin-top:2px;}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  .cat-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px;cursor:pointer;}
+  .cat-card:hover{border-color:#16a34a;box-shadow:0 0 0 2px rgba(22,163,74,.1);}
+  .cat-emoji{font-size:36px;margin-bottom:10px;}
+  .cat-name{font-size:14px;font-weight:700;color:#111827;}
+  .cat-count{font-size:12px;color:#6b7280;margin-top:4px;}
+  .cat-revenue{font-size:13px;font-weight:700;color:#16a34a;margin-top:8px;}
+  .cat-bar{height:4px;background:#e5e7eb;border-radius:2px;margin-top:8px;overflow:hidden;}
+  .cat-bar-fill{height:100%;background:#16a34a;border-radius:2px;}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:16px;}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .card-title{font-size:13px;font-weight:700;color:#111827;}
+  .card-sub{font-size:11px;color:#6b7280;margin-top:2px;}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;}
+  .badge-green{background:#dcfce7;color:#166534;}
+  table{width:100%;border-collapse:collapse;}
+  thead tr{background:#f9fafb;border-bottom:1px solid #e5e7eb;}
+  th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;}
+  td{padding:9px 12px;font-size:12px;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#f9fafb;}
+  .table-wrap{overflow-x:auto;border-radius:8px;border:1px solid #e5e7eb;}
+  .action-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#16a34a;margin-right:8px;}
+  .action-link.danger{color:#ef4444;}
+  .footer{padding:14px 24px;border-top:1px solid #e5e7eb;background:#fff;margin-left:220px;font-size:11px;color:#9ca3af;text-align:center;}
+  ::-webkit-scrollbar{width:4px;height:4px;} ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <div><div class="logo-text">CHILY FRUTAS</div><div class="logo-sub">ERP v2.5.1</div></div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Principal</div>
+    <a href="dashboard.html" class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
+    <a href="2modulo-productos.html" class="sidebar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Productos</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Gestión</div>
+    <a href="13modulo-categorias.html" class="sidebar-item active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>Categorías</a>
+  </div>
+  <div class="sidebar-footer">© 2025 CHILY FRUTAS · ERP v2.5.1</div>
+</aside>
+<div class="main">
+  <header class="header">
+    <div class="breadcrumb"><span>Categorías</span></div>
+    <div class="header-right">
+      <a href="#" class="btn btn-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva Categoría
+      </a>
+      <div class="avatar">CM</div>
+    </div>
+  </header>
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" style="display:inline;vertical-align:-3px;margin-right:6px;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          Gestión de Categorías
+        </div>
+        <div class="page-sub">8 categorías activas · 312 productos organizados · Bien organizado</div>
+      </div>
+      <a href="#" class="btn btn-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva Categoría
+      </a>
+    </div>
+
+    <!-- CATEGORY CARDS -->
+    <div class="grid-4">
+      <div class="cat-card">
+        <div class="cat-emoji">🍍</div>
+        <div class="cat-name">Tropicales</div>
+        <div class="cat-count">68 productos</div>
+        <div class="cat-revenue">$4,280 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:100%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;">
+          <span class="badge badge-green">Activa</span>
+          <span style="font-size:10px;color:#6b7280;margin-top:2px;">35% ventas</span>
+        </div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-emoji">🍓</div>
+        <div class="cat-name">Berries</div>
+        <div class="cat-count">45 productos</div>
+        <div class="cat-revenue">$3,840 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:90%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;"><span class="badge badge-green">Activa</span><span style="font-size:10px;color:#6b7280;margin-top:2px;">25% ventas</span></div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-emoji">🍊</div>
+        <div class="cat-name">Cítricas</div>
+        <div class="cat-count">52 productos</div>
+        <div class="cat-revenue">$2,960 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:69%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;"><span class="badge badge-green">Activa</span><span style="font-size:10px;color:#6b7280;margin-top:2px;">20% ventas</span></div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-emoji">🍇</div>
+        <div class="cat-name">Uvas</div>
+        <div class="cat-count">28 productos</div>
+        <div class="cat-revenue">$2,480 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:58%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;"><span class="badge badge-green">Activa</span><span style="font-size:10px;color:#6b7280;margin-top:2px;">12% ventas</span></div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-emoji">🥭</div>
+        <div class="cat-name">Mangos</div>
+        <div class="cat-count">34 productos</div>
+        <div class="cat-revenue">$4,280 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:100%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;"><span class="badge badge-green">Activa</span><span style="font-size:10px;color:#6b7280;margin-top:2px;">Incluida Tropicales</span></div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-emoji">🥝</div>
+        <div class="cat-name">Exóticas</div>
+        <div class="cat-count">41 productos</div>
+        <div class="cat-revenue">$2,160 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:50%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;"><span class="badge badge-green">Activa</span><span style="font-size:10px;color:#6b7280;margin-top:2px;">5% ventas</span></div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-emoji">🍌</div>
+        <div class="cat-name">Bananos</div>
+        <div class="cat-count">22 productos</div>
+        <div class="cat-revenue">$1,124 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:26%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;"><span class="badge badge-green">Activa</span><span style="font-size:10px;color:#6b7280;margin-top:2px;">3% ventas</span></div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-emoji">🛍</div>
+        <div class="cat-name">Combos</div>
+        <div class="cat-count">22 productos</div>
+        <div class="cat-revenue">$896 / mes</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:21%;"></div></div>
+        <div style="margin-top:8px;display:flex;gap:6px;"><span class="badge badge-green">Activa</span><span style="font-size:10px;color:#6b7280;margin-top:2px;">Packs especiales</span></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card" style="padding:0;">
+      <div class="card-header" style="padding:16px 20px;border-bottom:1px solid #e5e7eb;margin-bottom:0;">
+        <div><div class="card-title">Resumen de Categorías</div><div class="card-sub">8 categorías activas · 312 productos</div></div>
+        <a href="#" class="btn btn-primary" style="font-size:11px;padding:6px 12px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva
+        </a>
+      </div>
+      <div class="table-wrap" style="border:none;border-radius:0;">
+        <table>
+          <thead><tr><th>Categoría</th><th>Ícono</th><th>Productos</th><th>Activos</th><th>Stock Bajo</th><th>Ventas/Mes</th><th>Ingresos/Mes</th><th>% del Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:600;">Tropicales</td><td>🍍</td><td>68</td><td>62</td><td>3</td><td>420 kg</td><td style="font-weight:700;color:#16a34a;">$4,280</td><td>35%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+            <tr><td style="font-weight:600;">Berries</td><td>🍓</td><td>45</td><td>42</td><td>2</td><td>320 band.</td><td style="font-weight:700;color:#16a34a;">$3,840</td><td>25%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+            <tr><td style="font-weight:600;">Cítricas</td><td>🍊</td><td>52</td><td>50</td><td>1</td><td>890 kg</td><td style="font-weight:700;color:#16a34a;">$2,960</td><td>20%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+            <tr><td style="font-weight:600;">Uvas</td><td>🍇</td><td>28</td><td>25</td><td>2</td><td>196 kg</td><td style="font-weight:700;color:#16a34a;">$2,480</td><td>12%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+            <tr><td style="font-weight:600;">Exóticas</td><td>🥝</td><td>41</td><td>38</td><td>0</td><td>560 un</td><td style="font-weight:700;color:#16a34a;">$2,160</td><td>5%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+            <tr><td style="font-weight:600;">Bananos</td><td>🍌</td><td>22</td><td>21</td><td>0</td><td>280 rac.</td><td style="font-weight:700;color:#16a34a;">$1,124</td><td>3%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+            <tr><td style="font-weight:600;">Pomáceas</td><td>🍎</td><td>14</td><td>12</td><td>0</td><td>140 kg</td><td style="font-weight:700;color:#16a34a;">$840</td><td>0%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+            <tr><td style="font-weight:600;">Combos</td><td>🛍</td><td>22</td><td>14</td><td>0</td><td>74 packs</td><td style="font-weight:700;color:#16a34a;">$896</td><td>0%</td><td><span class="badge badge-green">Activa</span></td><td><a class="action-link">Editar</a><a class="action-link">Ver todos</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <footer class="footer">© 2025 CHILY FRUTAS · Sistema ERP v2.5.1</footer>
+</div>
+</div>
+</body>
+</html>
