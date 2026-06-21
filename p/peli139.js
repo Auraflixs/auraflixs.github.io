@@ -8,7 +8,7 @@ window.moviesList.push({
     trailer: "https://www.youtube.com/embed/kLZ7PGp7ZL0",
     video: "#kwtkc",
     year: 2026,
-    genres: [],
+    genres: ["Terror","Comedia"],
     info: "La aclamada franquicia de parodias regresa para burlarse de la nueva era del cine de terror moderno. Desde fenómenos virales y películas de horror psicológico hasta las franquicias más recientes, nadie está a salvo en esta nueva entrega cargada de humor absurdo y situaciones delirantes.",
     featured: true
 });
