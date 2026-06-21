@@ -28,7 +28,7 @@ window.LATELY_IDS = [
     "p131",
     "p126",
     { id: "s20", img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/pRtJagIxpfODzzb0T0NAvZSzErC.webp" },
-    "p132",
-    "s33",
-    "p121"
+    "p139",
+    "p138",
+    "p135"
 ];
