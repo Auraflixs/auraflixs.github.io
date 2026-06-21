@@ -2,7 +2,7 @@ window.moviesList = window.moviesList || [];
 
 window.moviesList.push({
     id: "p138",
-    globalid: "138",
+    globalid: "38",
     title: "Backrooms: Sin Salida",
     year: "2026",
     genre: "Terror, Misterio, Ciencia ficción",
