@@ -2,9 +2,10 @@ window.busquedasPopulares = [
     "Avatar",
     "La hermanastra fea",
     "Stranger Things",
-    "It",
+    "Michael",
     "Conjuro 4",
     "wicked",
     "Frankenstein",
-    "Tron: Ares"
+    "Tron: Ares",
+    "Euphoria"
 ];
