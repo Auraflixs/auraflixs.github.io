@@ -3,6 +3,7 @@ window.seriesList = window.seriesList || [];
 window.seriesList.push({
     id: "s5",
     title: "Euphoria",
+    tags: [],
     image: "https://raw.githubusercontent.com/Auraflixs/im-genestv/refs/heads/main/9MmQrUGUbDDl2lHMwZvhjgNnkZt.webp",
     trailer: "https://www.youtube.com/embed/P7UDF9LHo48?start=6",
     year: 2019,
@@ -15,35 +16,35 @@ window.seriesList.push({
             episodes: [
                 {
                     episode: 1,
-                    video: "#https://auraflix.seekplays.com/#8amjc"
+                    video: "https://auraflix.seekplays.com/#8amjc"
                 },
                 {
                     episode: 2,
-                    video: "#https://auraflix.seekplays.com/#erc5y"
+                    video: "https://auraflix.seekplays.com/#erc5y"
                 },
                 {
                     episode: 3,
-                    video: "#https://auraflix.seekplays.com/#cozva"
+                    video: "https://auraflix.seekplays.com/#cozva"
                 },
                 {
                     episode: 4,
-                    video: "#https://auraflix.seekplays.com/#jfixu"
+                    video: "https://auraflix.seekplays.com/#jfixu"
                 },
                 {
                     episode: 5,
-                    video: "#https://auraflix.seekplays.com/#hjfwr"
+                    video: "https://auraflix.seekplays.com/#hjfwr"
                 },
                 {
                     episode: 6,
-                    video: "#https://auraflix.seekplays.com/#6vkqa"
+                    video: "https://auraflix.seekplays.com/#6vkqa"
                 },
                 {
                     episode: 7,
-                    video: "#https://auraflix.seekplays.com/#b1lr9"
+                    video: "https://auraflix.seekplays.com/#b1lr9"
                 },
                 {
                     episode: 8,
-                    video: "#https://auraflix.seekplays.com/#sgq1j"
+                    video: "https://auraflix.seekplays.com/#sgq1j"
                 }
             ]
         },
@@ -52,35 +53,35 @@ window.seriesList.push({
             episodes: [
                 {
                     episode: 1,
-                    video: "#https://auraflix.seekplays.com/#hjfw8"
+                    video: "https://auraflix.seekplays.com/#hjfw8"
                 },
                 {
                     episode: 2,
-                    video: "#https://auraflix.seekplays.com/#n8a3b"
+                    video: "https://auraflix.seekplays.com/#n8a3b"
                 },
                 {
                     episode: 3,
-                    video: "#https://auraflix.seekplays.com/#kuwjk"
+                    video: "https://auraflix.seekplays.com/#kuwjk"
                 },
                 {
                     episode: 4,
-                    video: "#https://auraflix.seekplays.com/#wxt3v"
+                    video: "https://auraflix.seekplays.com/#wxt3v"
                 },
                 {
                     episode: 5,
-                    video: "#https://auraflix.seekplays.com/#oz38a"
+                    video: "https://auraflix.seekplays.com/#oz38a"
                 },
                 {
                     episode: 6,
-                    video: "#https://auraflix.seekplays.com/#xtepi"
+                    video: "https://auraflix.seekplays.com/#xtepi"
                 },
                 {
                     episode: 7,
-                    video: "#https://auraflix.seekplays.com/#kuwj8"
+                    video: "https://auraflix.seekplays.com/#kuwj8"
                 },
                 {
                     episode: 8,
-                    video: "#https://auraflix.seekplays.com/#l9ng6"
+                    video: "https://auraflix.seekplays.com/#l9ng6"
                 }
             ]
         },
@@ -89,35 +90,35 @@ window.seriesList.push({
             episodes: [
                 {
                     episode: 1,
-                    video: "#https://auraflix.seekplays.com/#kujet"
+                    video: "https://auraflix.seekplays.com/#kujet"
                 },
                 {
                     episode: 2,
-                    video: "#https://auraflix.seekplays.com/#8anu6"
+                    video: "https://auraflix.seekplays.com/#8anu6"
                 },
                 {
                     episode: 3,
-                    video: "#https://auraflix.seekplays.com/#ip9lq"
+                    video: "https://auraflix.seekplays.com/#ip9lq"
                 },
                 {
                     episode: 4,
-                    video: "#https://auraflix.seekplays.com/#k9dwd"
+                    video: "https://auraflix.seekplays.com/#k9dwd"
                 },
                 {
                     episode: 5,
-                    video: "#https://auraflix.seekplays.com/#lbf1o"
+                    video: "https://auraflix.seekplays.com/#lbf1o"
                 },
                 {
                     episode: 6,
-                    video: "#https://auraflix.seekplays.com/#swlgc"
+                    video: "https://auraflix.seekplays.com/#swlgc"
                 },
                 {
                     episode: 7,
-                    video: "#hmdag"
+                    video: "https://auraflix.seekplays.com/#hmdag"
                 },
                 {
                     episode: 8,
-                    video: "#5v3qz"
+                    video: "https://auraflix.seekplays.com/#5v3qz"
                 }
             ]
         }
