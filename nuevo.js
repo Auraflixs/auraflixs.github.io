@@ -5,12 +5,15 @@ const NEW_CONTENT_CONFIG = [
     { id: "s26", type: "episode" },
     { id: "s32", type: "episode" },
     { id: "s20", type: "episode" },
-    { id: "131", type: "cam" },
+    { id: "p131", type: "cam" },
     { id: "p122", type: "cam" },
     { id: "134", type: "cam" },
     { id: "p111", type: "cam" },
     { id: "p121", type: "cam" },
-    { id: "p126", type: "cam" }
+    { id: "p126", type: "cam" },
+    { id: "p138", type: "cam" },
+    { id: "p139", type: "cam" },
+    { id: "p131", type: "cam" }
 ];
 
 // Lógica para inyectar las etiquetas
