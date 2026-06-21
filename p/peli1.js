@@ -3,11 +3,12 @@ window.moviesList = window.moviesList || [];
 window.moviesList.push({
     id: "p1",
     title: "Frankenstein",
+    year: "2025",
+    genre: "Drama, Fantasía, Terror",
+    tags: [],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/rJjNMlxbjO34myMlzZJAOORBg2O.webp",
     trailer: "https://www.youtube.com/embed/11j2wQFm-tc?start=28",
-    video: "#8a6qf",
-    year: 2025,
-    genres: ["Drama","Fantasía","Terror"],
+    video: "https://auraflix.seekplays.com/#8a6qf",
     info: "El visionario Guillermo del Toro da vida a esta nueva adaptación del clásico de Mary Shelley. El Dr. Victor Frankenstein continúa su ambicioso experimento para desafiar a la muerte, creando una criatura que deberá enfrentar su propia humanidad en un mundo que la teme.",
     featured: true
 });
