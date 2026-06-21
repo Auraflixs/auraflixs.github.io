@@ -1,7 +1,6 @@
 // CONFIGURACIÓN DE NOVEDADES
 const NEW_CONTENT_CONFIG = [
     { id: "s5", type: "episode" },
-    { id: "p82", type: "cam" },
     { id: "s26", type: "episode" },
     { id: "s32", type: "episode" },
     { id: "s20", type: "episode" },
