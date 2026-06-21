@@ -6,7 +6,7 @@ const NEW_CONTENT_CONFIG = [
     { id: "s20", type: "episode" },
     { id: "p131", type: "cam" },
     { id: "p122", type: "cam" },
-    { id: "134", type: "cam" },
+    { id: "p134", type: "cam" },
     { id: "p111", type: "cam" },
     { id: "p121", type: "cam" },
     { id: "p126", type: "cam" },
