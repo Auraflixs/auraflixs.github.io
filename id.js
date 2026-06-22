@@ -1,5 +1,9 @@
 window.HERO_IDS = [
    {
+      id: "p140",
+      img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/gnAwcLTZ0ooeIc6DdIrwOZ383OR.jpg"
+   },
+   {
       id: "p139",
       img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/b5uCXrmUYKJcGFIlhaQK5WcWTY6.webp"
    },
@@ -10,10 +14,6 @@ window.HERO_IDS = [
    {
       id: "p138",
       img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/9VxQpK4qaK96iALwEoX3LoSadMj%20(1).webp"
-   },
-   {
-      id: "s5",
-      img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/hero/mH4tVZlwMsiwcBqBaGHLd0vHToX.webp"
    },
    {
       id: "p131",
