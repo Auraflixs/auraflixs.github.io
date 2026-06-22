@@ -180,6 +180,10 @@ window.seriesList.push({
                 {
                     episode: 8,
                     video: "https://auraflix.seekplays.com/#98b5z"
+                },
+                {
+                    episode: 9,
+                    video: "https://auraflix.seekplays.com/#hfeng"
                 }
             ]
         }
