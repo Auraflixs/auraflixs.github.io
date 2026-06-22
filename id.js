@@ -22,11 +22,11 @@ window.HERO_IDS = [
 ];
 
 window.LATELY_IDS = [
-    { id: "s5", img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp" },
+    "p140",
     { id: "p118", img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/ncNhHupOwveGaHtFrhEYbJpcZnT(1).webp" },
     "p120",
     "p131",
-    "p126",
+    { id: "s5", img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/vFur1VinsqHGvI3UBZq3sjo6YP8.webp" },
     { id: "s20", img: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/pRtJagIxpfODzzb0T0NAvZSzErC.webp" },
     "p139",
     "p138",
