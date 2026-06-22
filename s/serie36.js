@@ -1,7 +1,7 @@
 window.seriesList = window.seriesList || [];
 
 window.seriesList.push({
-    id: "s37",
+    id: "s36",
     title: "Spider-Noir",
     tags: ["Spider Noir"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/5fNg0zPxScuvDK2UNCuATfI2jyb.webp",
