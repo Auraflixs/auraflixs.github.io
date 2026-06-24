@@ -2,6 +2,7 @@ window.seriesList = window.seriesList || [];
 
 window.seriesList.push({
     id: "s37",
+    globalid: "42",
     title: "Off Campus / Kiss Me",
     tags: ["Off Campus","Kiss Me"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/QVyjW4MRsZgqUXbTMlcIWMNEXq.webp",
