@@ -2,6 +2,7 @@ window.seriesList = window.seriesList || [];
 
 window.seriesList.push({
     id: "s38",
+    globalid: "43",
     title: "Así aprenderás",
     tags: ["Teach You a Lesson"],
     image: "https://raw.githubusercontent.com/auraflixx/afx/refs/heads/main/app/lG83nWVT7cHl3nSxonaYhOjqyWH.webp",
