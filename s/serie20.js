@@ -184,6 +184,10 @@ window.seriesList.push({
                 {
                     episode: 9,
                     video: "https://auraflix.seekplays.com/#hfeng"
+                },
+                {
+                    episode: 10,
+                    video: "https://auraflix.seekplays.com/#v96nk"
                 }
             ]
         }
